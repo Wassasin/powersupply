@@ -1,0 +1,8 @@
+*/*-backups
+*/*.bak
+*/fp-info-cache
+*/production
+*/~*
+*/_autosave*
+**/#auto_saved_files#
+panels/outputs
