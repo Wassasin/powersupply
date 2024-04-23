@@ -4,6 +4,12 @@
 	(generator_version "8.0")
 	(uuid "6515fdc9-deb2-40d8-a5fe-5028c7085a49")
 	(paper "A4")
+	(title_block
+		(title "Variable USB power supply")
+		(date "2024-04-23")
+		(rev "1")
+		(company "Sarif")
+	)
 	(lib_symbols
 		(symbol "Device:C"
 			(pin_numbers hide)

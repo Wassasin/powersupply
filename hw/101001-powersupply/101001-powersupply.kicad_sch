@@ -4,6 +4,12 @@
 	(generator_version "8.0")
 	(uuid "5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c")
 	(paper "A4")
+	(title_block
+		(title "Variable USB power supply")
+		(date "2024-04-23")
+		(rev "1")
+		(company "Sarif")
+	)
 	(lib_symbols
 		(symbol "Connector:Conn_01x02_Socket"
 			(pin_names
@@ -1894,6 +1900,16 @@
 	)
 	(wire
 		(pts
+			(xy 63.5 144.78) (xy 92.71 144.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4b0e8147-3564-4f54-ae38-a8f538f8fd2c")
+	)
+	(wire
+		(pts
 			(xy 168.91 58.42) (xy 168.91 60.96)
 		)
 		(stroke
@@ -2514,6 +2530,16 @@
 	)
 	(wire
 		(pts
+			(xy 63.5 147.32) (xy 92.71 147.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d192ef01-aafa-45a3-bd84-105392d7008c")
+	)
+	(wire
+		(pts
 			(xy 252.73 105.41) (xy 252.73 107.95)
 		)
 		(stroke
@@ -2912,7 +2938,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0227ccc7-69eb-4f99-a91e-867c7792f25c")
-		(property "Reference" "#PWR0109"
+		(property "Reference" "#PWR0104"
 			(at 203.2 88.9 0)
 			(effects
 				(font
@@ -2962,7 +2988,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0109")
+					(reference "#PWR0104")
 					(unit 1)
 				)
 			)
@@ -3119,7 +3145,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "10caa023-1db4-43b3-be68-a0b8841b26ae")
-		(property "Reference" "#PWR0108"
+		(property "Reference" "#PWR0101"
 			(at 167.64 139.7 0)
 			(effects
 				(font
@@ -3169,7 +3195,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0108")
+					(reference "#PWR0101")
 					(unit 1)
 				)
 			)
@@ -3193,7 +3219,7 @@
 				)
 			)
 		)
-		(property "Value" "GT-USB-7010ASV"
+		(property "Value" "GT-USB-7051A"
 			(at 234.95 82.55 0)
 			(effects
 				(font
@@ -3201,7 +3227,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_USB:USB_C_Receptacle_G-Switch_GT-USB-7010ASV"
+		(property "Footprint" "Connector_USB:USB_C_Receptacle_G-Switch_GT-USB-7051x"
 			(at 238.76 102.87 0)
 			(effects
 				(font
@@ -3228,7 +3254,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C2988369"
+		(property "LCSC" "C2843970"
 			(at 234.95 102.87 0)
 			(effects
 				(font
@@ -3301,7 +3327,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3da6c20e-6c30-40c0-ad8b-bb4cc2469177")
-		(property "Reference" "#PWR0103"
+		(property "Reference" "#PWR0105"
 			(at 208.28 39.37 0)
 			(effects
 				(font
@@ -3351,7 +3377,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0103")
+					(reference "#PWR0105")
 					(unit 1)
 				)
 			)
@@ -3433,7 +3459,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "558f8540-03d7-4579-aee0-dcd2482c620e")
-		(property "Reference" "#PWR0111"
+		(property "Reference" "#PWR0107"
 			(at 232.41 41.91 0)
 			(effects
 				(font
@@ -3483,7 +3509,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0111")
+					(reference "#PWR0107")
 					(unit 1)
 				)
 			)
@@ -3499,7 +3525,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "5a2e7f3b-8d7a-4373-91e4-1455cf2b1deb")
-		(property "Reference" "#PWR0112"
+		(property "Reference" "#PWR0108"
 			(at 232.41 62.23 0)
 			(effects
 				(font
@@ -3549,7 +3575,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0112")
+					(reference "#PWR0108")
 					(unit 1)
 				)
 			)
@@ -3681,7 +3707,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7926a47d-385a-44dc-8c6f-004c0f13ea62")
-		(property "Reference" "#PWR0113"
+		(property "Reference" "#PWR0109"
 			(at 261.62 88.9 0)
 			(effects
 				(font
@@ -3731,7 +3757,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0113")
+					(reference "#PWR0109")
 					(unit 1)
 				)
 			)
@@ -3811,7 +3837,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "93fdbe35-3315-4da6-9683-14dc1e5f535f")
-		(property "Reference" "#FLG0103"
+		(property "Reference" "#FLG0102"
 			(at 199.39 33.655 0)
 			(effects
 				(font
@@ -3861,7 +3887,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#FLG0103")
+					(reference "#FLG0102")
 					(unit 1)
 				)
 			)
@@ -3877,7 +3903,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "96786274-2afa-411a-98ba-dc5f3e85eda5")
-		(property "Reference" "#PWR0110"
+		(property "Reference" "#PWR0106"
 			(at 227.33 139.7 0)
 			(effects
 				(font
@@ -3927,7 +3953,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0110")
+					(reference "#PWR0106")
 					(unit 1)
 				)
 			)
@@ -4765,7 +4791,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f6b786d8-9498-4360-bcd1-d2dd03d1f5d8")
-		(property "Reference" "#PWR0101"
+		(property "Reference" "#PWR0102"
 			(at 168.91 50.8 0)
 			(effects
 				(font
@@ -4815,7 +4841,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0101")
+					(reference "#PWR0102")
 					(unit 1)
 				)
 			)
@@ -4909,7 +4935,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "fd96bb53-ab52-42ee-8b9b-975311120d66")
-		(property "Reference" "#PWR0102"
+		(property "Reference" "#PWR0103"
 			(at 168.91 62.23 0)
 			(effects
 				(font
@@ -4959,7 +4985,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#PWR0102")
+					(reference "#PWR0103")
 					(unit 1)
 				)
 			)
@@ -4975,7 +5001,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "feb25760-7c39-4867-8ea8-220dcb939c8c")
-		(property "Reference" "#FLG0102"
+		(property "Reference" "#FLG0103"
 			(at 252.73 83.185 0)
 			(effects
 				(font
@@ -5025,7 +5051,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c"
-					(reference "#FLG0102")
+					(reference "#FLG0103")
 					(unit 1)
 				)
 			)
@@ -5258,7 +5284,7 @@
 			(uuid "a08ab512-4536-4e3d-9306-d2215effe491")
 		)
 		(pin "GPIO2" bidirectional
-			(at 92.71 134.62 180)
+			(at 92.71 139.7 180)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5268,7 +5294,7 @@
 			(uuid "c95f9ab1-343e-4b26-b33c-77bc04354805")
 		)
 		(pin "GPIO9" bidirectional
-			(at 92.71 142.24 180)
+			(at 92.71 147.32 180)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5278,7 +5304,7 @@
 			(uuid "486844ac-d796-4224-af0d-08811747d21a")
 		)
 		(pin "GPIO6" bidirectional
-			(at 92.71 137.16 180)
+			(at 92.71 142.24 180)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5288,7 +5314,7 @@
 			(uuid "5e445b89-8047-49e6-95f1-1bcd8871acaa")
 		)
 		(pin "GPIO8" bidirectional
-			(at 92.71 139.7 180)
+			(at 92.71 144.78 180)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5296,6 +5322,26 @@
 				(justify left)
 			)
 			(uuid "c5c74dc5-bc54-49ae-875a-abf15bbfce85")
+		)
+		(pin "GPIO0" bidirectional
+			(at 92.71 134.62 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "d02f05b0-696c-4560-8ada-d9c59882f74b")
+		)
+		(pin "GPIO1" bidirectional
+			(at 92.71 137.16 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "624df3a1-ee3e-44c7-8052-228362f3abd8")
 		)
 		(instances
 			(project "101001-powersupply"
@@ -5335,46 +5381,6 @@
 				(justify left top)
 			)
 		)
-		(pin "EXT12" bidirectional
-			(at 63.5 139.7 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "1b51dafc-030a-4178-a062-4699a163dbe7")
-		)
-		(pin "EXT4" bidirectional
-			(at 63.5 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "ecf206ea-308c-4f4e-ac04-530885051548")
-		)
-		(pin "EXT8" bidirectional
-			(at 63.5 137.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "c4b71e26-a50b-4a67-bb6a-4a4105a366a8")
-		)
-		(pin "EXT16" bidirectional
-			(at 63.5 142.24 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "27b1da88-6898-4312-9c5e-ab09bfb61016")
-		)
 		(pin "SCL" bidirectional
 			(at 63.5 123.19 0)
 			(effects
@@ -5394,6 +5400,66 @@
 				(justify right)
 			)
 			(uuid "99e2464b-42d6-4369-bd58-164708bd0a86")
+		)
+		(pin "EXT12" bidirectional
+			(at 63.5 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "c174f81e-f48e-455d-91bf-9e50c9a3ac31")
+		)
+		(pin "EXT10" bidirectional
+			(at 63.5 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "db67779e-4a10-405d-a231-5113046aff14")
+		)
+		(pin "EXT4" bidirectional
+			(at 63.5 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "eee1cfc1-a897-46b8-81d7-529fb3c2f658")
+		)
+		(pin "EXT6" bidirectional
+			(at 63.5 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "8512d226-f2fb-4339-907a-1fdb37c4d683")
+		)
+		(pin "EXT18" bidirectional
+			(at 63.5 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "996b6cef-3a59-4dfe-9548-d616723d0b52")
+		)
+		(pin "EXT16" bidirectional
+			(at 63.5 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "a1e8158b-11d0-402c-af4c-b44b0264ad7c")
 		)
 		(instances
 			(project "101001-powersupply"

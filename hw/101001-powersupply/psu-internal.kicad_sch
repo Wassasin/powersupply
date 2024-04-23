@@ -4,6 +4,12 @@
 	(generator_version "8.0")
 	(uuid "5c4e33ee-cdcc-4bda-a165-1767b4a739c2")
 	(paper "A4")
+	(title_block
+		(title "Variable USB power supply")
+		(date "2024-04-23")
+		(rev "1")
+		(company "Sarif")
+	)
 	(lib_symbols
 		(symbol "Device:C"
 			(pin_numbers hide)
@@ -2122,7 +2128,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Package_SO:TI_SO-PowerPAD-8"
+		(property "Footprint" "Package_SO:TI_SO-PowerPAD-8_ThermalVias"
 			(at 168.91 102.87 0)
 			(effects
 				(font
@@ -2300,7 +2306,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1a2ceb17-03c6-46ec-9bbc-867120da7e43")
-		(property "Reference" "#PWR0203"
+		(property "Reference" "#PWR0204"
 			(at 222.25 83.82 0)
 			(effects
 				(font
@@ -2350,7 +2356,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/355c0440-2bde-4095-9eb2-edbd94b04247"
-					(reference "#PWR0203")
+					(reference "#PWR0204")
 					(unit 1)
 				)
 			)
@@ -2365,7 +2371,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "2397d7f4-2142-4ee9-a238-981ac908672a")
-		(property "Reference" "C207"
+		(property "Reference" "C206"
 			(at 205.74 104.14 90)
 			(effects
 				(font
@@ -2446,7 +2452,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/355c0440-2bde-4095-9eb2-edbd94b04247"
-					(reference "C207")
+					(reference "C206")
 					(unit 1)
 				)
 			)
@@ -2558,7 +2564,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2fe403ce-3781-431e-8eaa-414f6f0411ef")
-		(property "Reference" "#PWR0204"
+		(property "Reference" "#PWR0203"
 			(at 135.89 181.61 0)
 			(effects
 				(font
@@ -2608,7 +2614,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/355c0440-2bde-4095-9eb2-edbd94b04247"
-					(reference "#PWR0204")
+					(reference "#PWR0203")
 					(unit 1)
 				)
 			)
@@ -3523,7 +3529,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "fba09b0f-9dc9-4994-8b74-f47fd057934d")
-		(property "Reference" "C206"
+		(property "Reference" "C207"
 			(at 210.82 104.14 90)
 			(effects
 				(font
@@ -3604,7 +3610,7 @@
 		(instances
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/355c0440-2bde-4095-9eb2-edbd94b04247"
-					(reference "C206")
+					(reference "C207")
 					(unit 1)
 				)
 			)
