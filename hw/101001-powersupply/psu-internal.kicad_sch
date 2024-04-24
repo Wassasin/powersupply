@@ -1610,7 +1610,7 @@
 	)
 	(wire
 		(pts
-			(xy 135.89 172.72) (xy 138.43 172.72)
+			(xy 137.16 177.8) (xy 139.7 177.8)
 		)
 		(stroke
 			(width 0)
@@ -1770,7 +1770,7 @@
 	)
 	(wire
 		(pts
-			(xy 143.51 172.72) (xy 152.4 172.72)
+			(xy 144.78 177.8) (xy 153.67 177.8)
 		)
 		(stroke
 			(width 0)
@@ -1860,7 +1860,7 @@
 	)
 	(wire
 		(pts
-			(xy 135.89 175.26) (xy 135.89 172.72)
+			(xy 137.16 180.34) (xy 137.16 177.8)
 		)
 		(stroke
 			(width 0)
@@ -1918,6 +1918,18 @@
 		)
 		(uuid "fd166986-fc2f-42aa-94f5-ade355eeeed7")
 	)
+	(rectangle
+		(start 118.11 165.1)
+		(end 172.72 194.31)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill
+			(type none)
+		)
+		(uuid e8f72ee7-d7a4-41f6-97f2-6be77dc66859)
+	)
 	(text "In: 5V-20V 350mA-90mA\nOut: 3V3 500mA"
 		(exclude_from_sim no)
 		(at 15.24 17.78 0)
@@ -1929,8 +1941,21 @@
 		)
 		(uuid "0042ea9c-c584-4973-b7f8-f910cea7b389")
 	)
+	(text "AGND nettie near VCC capacitor ground"
+		(exclude_from_sim no)
+		(at 119.38 193.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+				(bold yes)
+			)
+			(justify left)
+		)
+		(uuid "598c126b-3003-4620-8f48-989ebbd7e5b3")
+	)
 	(label "AGND"
-		(at 152.4 172.72 180)
+		(at 153.67 177.8 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2556,7 +2581,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 135.89 175.26 0)
+		(at 137.16 180.34 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -2565,7 +2590,7 @@
 		(fields_autoplaced yes)
 		(uuid "2fe403ce-3781-431e-8eaa-414f6f0411ef")
 		(property "Reference" "#PWR0203"
-			(at 135.89 181.61 0)
+			(at 137.16 186.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2574,7 +2599,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 135.89 180.34 0)
+			(at 137.16 185.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2582,7 +2607,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 135.89 175.26 0)
+			(at 137.16 180.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2591,7 +2616,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 135.89 175.26 0)
+			(at 137.16 180.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2600,7 +2625,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 135.89 175.26 0)
+			(at 137.16 180.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3131,7 +3156,7 @@
 	)
 	(symbol
 		(lib_id "Device:NetTie_2")
-		(at 140.97 172.72 0)
+		(at 142.24 177.8 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -3140,7 +3165,7 @@
 		(fields_autoplaced yes)
 		(uuid "869801a4-2a10-4011-a813-584a196b93e1")
 		(property "Reference" "NT201"
-			(at 140.97 167.64 0)
+			(at 142.24 172.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3148,7 +3173,7 @@
 			)
 		)
 		(property "Value" "NetTie_2"
-			(at 140.97 170.18 0)
+			(at 142.24 175.26 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3156,7 +3181,7 @@
 			)
 		)
 		(property "Footprint" "NetTie:NetTie-2_SMD_Pad0.5mm"
-			(at 140.97 172.72 0)
+			(at 142.24 177.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3165,7 +3190,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 140.97 172.72 0)
+			(at 142.24 177.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3174,7 +3199,7 @@
 			)
 		)
 		(property "Description" "Net tie, 2 pins"
-			(at 140.97 172.72 0)
+			(at 142.24 177.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)

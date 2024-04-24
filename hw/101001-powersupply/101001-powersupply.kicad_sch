@@ -5069,7 +5069,7 @@
 			(color 0 0 0 0.0000)
 		)
 		(uuid "355c0440-2bde-4095-9eb2-edbd94b04247")
-		(property "Sheetname" "Interal powersupply"
+		(property "Sheetname" "Internal powersupply"
 			(at 25.4 37.3884 0)
 			(effects
 				(font
