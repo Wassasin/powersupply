@@ -7755,7 +7755,7 @@
 				)
 			)
 		)
-		(property "Value" ""
+		(property "Value" "~"
 			(at 261.62 93.98 90)
 			(effects
 				(font
