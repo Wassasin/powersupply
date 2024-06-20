@@ -1,0 +1,64 @@
+[package]
+name = "slakkotron"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace]
+
+[dependencies]
+embassy-executor    = { version = "0.5", features = ["task-arena-size-131072", "executor-thread"] }
+embassy-sync        = "0.5"
+embassy-time        = { version = "0.3", features = ["generic-queue-8"] }
+embassy-futures     = { version = "0.1" }
+embassy-net         = { version = "0.4.0", features = [ "tcp", "udp", "dhcpv4", "medium-ethernet"] }
+embassy-embedded-hal = "0.1"
+
+esp-hal = { version = "0.18", features = ["esp32c3", "async"] }
+esp-hal-embassy = {version = "0.1", features = ["esp32c3", "time-timg0"] }
+esp-backtrace = { version = "0.12", features = [
+    "esp32c3",
+    "panic-handler",
+    "exception-handler",
+    "println",
+] }
+
+esp32c3 = { version = "0.23" }
+esp-println = { version = "0.9", default-features = false, features = ["esp32c3", "log", "jtag-serial"] }
+esp-wifi = { version = "0.6", default-features = false, features = ["esp32c3", "log", "async", "embassy-net", "wifi", "wifi-default", "utils"] }
+embedded-io-async   = "0.6"
+
+static_cell = "2.1"
+derive_more = "0.99"
+
+libm = "0.2.8"
+
+log = "0.4"
+hex = { version = "0.4", default-features = false }
+
+futures = { version = "0.3", default-features = false, features = ["async-await"] }
+heapless = "0.8"
+
+# Device driver dependencies
+embedded-hal = "1.0"
+embedded-hal-async = "1.0"
+device-driver = "0.6"
+device-driver-macros = "0.6"
+
+bitvec = { version = "1.0", default-features = false }
+funty = { version = "2.0", default-features = false }
+num_enum = { version = "0.7", default-features = false }
+
+[features]
+
+[profile.dev.package.esp-wifi]
+opt-level = 3
+
+[profile.release]
+codegen-units    = 1
+debug            = 2
+debug-assertions = false
+incremental      = false
+opt-level        = 3
+lto = 'fat'
+overflow-checks  = false
