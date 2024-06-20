@@ -1230,6 +1230,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-mqtt"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f71160765f368fd9a84e0955e2ddb6d64ac9018fee1c5323354d6d08c816b40"
+dependencies = [
+ "embedded-io",
+ "embedded-io-async",
+ "heapless",
+ "rand_core",
+]
+
+[[package]]
 name = "rustc_version"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1291,7 +1303,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-net",
- "embassy-sync 0.5.0",
+ "embassy-sync 0.6.0",
  "embassy-time",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
@@ -1308,7 +1320,10 @@ dependencies = [
  "hex",
  "libm",
  "log",
+ "nb 1.1.0",
  "num_enum",
+ "rust-mqtt",
+ "serde",
  "static_cell",
 ]
 

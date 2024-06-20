@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 embassy-executor    = { version = "0.5", features = ["task-arena-size-131072", "executor-thread"] }
-embassy-sync        = "0.5"
+embassy-sync        = "0.6"
 embassy-time        = { version = "0.3", features = ["generic-queue-8"] }
 embassy-futures     = { version = "0.1" }
 embassy-net         = { version = "0.4.0", features = [ "tcp", "udp", "dhcpv4", "medium-ethernet"] }
@@ -40,6 +40,7 @@ futures = { version = "0.3", default-features = false, features = ["async-await"
 heapless = "0.8"
 
 # Device driver dependencies
+nb = "1.1"
 embedded-hal = "1.0"
 embedded-hal-async = "1.0"
 device-driver = "0.6"
@@ -48,6 +49,10 @@ device-driver-macros = "0.6"
 bitvec = { version = "1.0", default-features = false }
 funty = { version = "2.0", default-features = false }
 num_enum = { version = "0.7", default-features = false }
+
+# MQTT
+rust-mqtt = { version = "0.3.0", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [features]
 

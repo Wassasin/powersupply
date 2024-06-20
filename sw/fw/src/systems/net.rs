@@ -1,11 +1,16 @@
-use core::marker::PhantomData;
-
 use embassy_executor::Spawner;
-use embassy_net::{tcp::TcpSocket, Config, Ipv4Address, Stack, StackResources};
+use embassy_net::{tcp::TcpSocket, Config, IpEndpoint, Ipv4Address, Stack, StackResources};
+use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel};
 use embassy_time::{Duration, Timer};
 use esp_wifi::wifi::{
     ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
     WifiState,
+};
+use heapless::{String, Vec};
+use rust_mqtt::{
+    client::{client::MqttClient, client_config::ClientConfig},
+    packet::v5::publish_packet::QualityOfService,
+    utils::rng_generator::CountingRng,
 };
 
 use crate::bsp::Wifi;
@@ -22,10 +27,52 @@ macro_rules! mk_static {
     }};
 }
 
-pub struct Net(PhantomData<()>);
+type DataChannel<T> = Channel<NoopRawMutex, T, 1>;
+
+const TOPIC_SIZE: usize = 64;
+const CONTENT_SIZE: usize = 80;
+
+pub struct Message {
+    topic: String<TOPIC_SIZE>,
+    content: Vec<u8, CONTENT_SIZE>,
+}
+
+#[derive(Debug)]
+pub enum Error {
+    TopicTooLarge,
+    ContentTooLarge,
+}
+
+pub enum Topic {
+    Stats,
+}
+
+impl Topic {
+    pub fn to_str(&self) -> Result<String<TOPIC_SIZE>, ()> {
+        match self {
+            Topic::Stats => String::try_from("slakkotron/stats").map_err(|_| ()),
+        }
+    }
+}
+
+impl Message {
+    pub fn new(topic: &Topic, value: impl core::fmt::Debug) -> Result<Self, Error> {
+        let topic = topic.to_str().map_err(|_| Error::TopicTooLarge)?;
+        let mut content = String::new();
+        core::fmt::write(&mut content, format_args!("{:#?}", value))
+            .map_err(|_| Error::ContentTooLarge)?;
+        let content = content.into_bytes();
+
+        Ok(Self { topic, content })
+    }
+}
+
+pub struct Net {
+    channel: DataChannel<Message>,
+}
 
 impl Net {
-    pub async fn init(wifi: Wifi, spawner: &Spawner) -> Net {
+    pub async fn init(wifi: Wifi, spawner: &Spawner) -> &'static Net {
         let config = Config::dhcpv4(Default::default());
 
         // Init network stack
@@ -39,17 +86,30 @@ impl Net {
             )
         );
 
-        spawner.spawn(connection_task(wifi.controller)).ok();
-        spawner.spawn(stack_task(&stack)).ok();
+        let net = &*mk_static!(
+            Net,
+            Net {
+                channel: DataChannel::new()
+            }
+        );
 
-        spawner.spawn(net_task(&stack)).ok();
+        spawner.spawn(connection_task(wifi.controller)).unwrap();
+        spawner.spawn(stack_task(&stack)).unwrap();
+        spawner.spawn(net_task(&stack, &net.channel)).unwrap();
 
-        Net(PhantomData::default())
+        net
+    }
+
+    pub async fn send(&self, message: Message) {
+        self.channel.send(message).await
     }
 }
 
 #[embassy_executor::task]
-async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
+async fn net_task(
+    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
+    channel: &'static DataChannel<Message>,
+) {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
 
@@ -74,38 +134,52 @@ async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
 
         socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
-        let remote_endpoint = (Ipv4Address::new(142, 250, 185, 115), 80);
+        let endpoint = IpEndpoint::new(Ipv4Address::new(192, 168, 1, 2).into(), 1883);
+
         log::info!("connecting...");
-        let r = socket.connect(remote_endpoint).await;
+        let r = socket.connect(endpoint).await;
         if let Err(e) = r {
             log::info!("connect error: {:?}", e);
             continue;
         }
         log::info!("connected!");
-        let mut buf = [0; 1024];
+
+        let mut config: ClientConfig<'_, 20, CountingRng> = ClientConfig::new(
+            rust_mqtt::client::client_config::MqttVersion::MQTTv5,
+            CountingRng(20000),
+        );
+
+        config.add_max_subscribe_qos(QualityOfService::QoS1);
+        config.add_client_id("slakkotron");
+        config.max_packet_size = 20;
+
+        let mut recv_buffer = [0; 512];
+        let mut write_buffer = [0; 512];
+
+        let mut client = MqttClient::new(
+            socket,
+            &mut write_buffer,
+            256,
+            &mut recv_buffer,
+            256,
+            config,
+        );
+
+        log::info!("Connecting to broker...");
+        client.connect_to_broker().await.unwrap();
+
         loop {
-            use embedded_io_async::Write;
-            let r = socket
-                .write_all(b"GET / HTTP/1.0\r\nHost: www.mobile-j.de\r\n\r\n")
-                .await;
-            if let Err(e) = r {
-                log::info!("write error: {:?}", e);
-                break;
-            }
-            let n = match socket.read(&mut buf).await {
-                Ok(0) => {
-                    log::info!("read EOF");
-                    break;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    log::info!("read error: {:?}", e);
-                    break;
-                }
-            };
-            log::info!("{}", core::str::from_utf8(&buf[..n]).unwrap());
+            let message = channel.receive().await;
+            client
+                .send_message(
+                    &message.topic,
+                    &message.content,
+                    QualityOfService::QoS1,
+                    false,
+                )
+                .await
+                .unwrap();
         }
-        Timer::after(Duration::from_millis(3000)).await;
     }
 }
 

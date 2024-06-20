@@ -43,13 +43,18 @@ async fn main(spawner: Spawner) {
 
     let bsp = Bsp::init(Peripherals::take());
 
-    systems::net::Net::init(bsp.wifi, &spawner).await;
+    let net = systems::net::Net::init(bsp.wifi, &spawner).await;
+    let stats = systems::stats::Stats::init(bsp.stats, &spawner);
 
-    // let state = State {
-    //     spawner,
-    //     rtc: bsp.rtc,
-    //     delay: bsp.delay,
-    // };
-
-    // TODO
+    let mut subscriber = stats.subscriber();
+    loop {
+        match subscriber.next_message().await {
+            embassy_sync::pubsub::WaitResult::Lagged(_) => {}
+            embassy_sync::pubsub::WaitResult::Message(message) => {
+                log::info!("{:#?}", message);
+                net.send(systems::net::Message::new(&systems::net::Topic::Stats, message).unwrap())
+                    .await;
+            }
+        }
+    }
 }
