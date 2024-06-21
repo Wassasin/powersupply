@@ -52,8 +52,10 @@ async fn main(spawner: Spawner) {
             embassy_sync::pubsub::WaitResult::Lagged(_) => {}
             embassy_sync::pubsub::WaitResult::Message(message) => {
                 log::info!("{:#?}", message);
-                net.send(systems::net::Message::new(&systems::net::Topic::Stats, message).unwrap())
-                    .await;
+                net.send(
+                    systems::net::Message::new(&systems::net::Topic::Stats, &message).unwrap(),
+                )
+                .await;
             }
         }
     }

@@ -23,9 +23,9 @@ impl Debug for Millivolts {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct StatsData {
-    pub vsupply: Millivolts,
-    pub vprog: Millivolts,
-    pub vout: Millivolts,
+    pub vsupply_mv: Millivolts,
+    pub vprog_mv: Millivolts,
+    pub vout_mv: Millivolts,
 }
 
 const DATA_CAP: usize = 1;
@@ -103,14 +103,14 @@ async fn task(mut bsp: bsp::Stats, system: &'static Stats) {
             .unwrap();
         Timer::after(Duration::from_millis(1)).await;
 
-        let vsupply = factor_high(vsupply);
-        let vprog = factor_vprog(vprog);
-        let vout = factor_high(vout);
+        let vsupply_mv = factor_high(vsupply);
+        let vprog_mv = factor_vprog(vprog);
+        let vout_mv = factor_high(vout);
 
         let data = StatsData {
-            vsupply,
-            vprog,
-            vout,
+            vsupply_mv,
+            vprog_mv,
+            vout_mv,
         };
 
         system.data.lock().await.replace(data.clone());

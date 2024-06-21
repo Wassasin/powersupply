@@ -9,9 +9,10 @@ use esp_wifi::wifi::{
 use heapless::{String, Vec};
 use rust_mqtt::{
     client::{client::MqttClient, client_config::ClientConfig},
-    packet::v5::publish_packet::QualityOfService,
+    packet::v5::{publish_packet::QualityOfService, reason_codes::ReasonCode},
     utils::rng_generator::CountingRng,
 };
+use serde::Serialize;
 
 use crate::bsp::Wifi;
 
@@ -56,12 +57,13 @@ impl Topic {
 }
 
 impl Message {
-    pub fn new(topic: &Topic, value: impl core::fmt::Debug) -> Result<Self, Error> {
+    pub fn new(topic: &Topic, value: &impl Serialize) -> Result<Self, Error> {
         let topic = topic.to_str().map_err(|_| Error::TopicTooLarge)?;
-        let mut content = String::new();
-        core::fmt::write(&mut content, format_args!("{:#?}", value))
-            .map_err(|_| Error::ContentTooLarge)?;
-        let content = content.into_bytes();
+        let mut content: Vec<u8, CONTENT_SIZE> = Vec::new();
+        content.resize_default(CONTENT_SIZE).unwrap();
+        let size =
+            serde_json_core::to_slice(value, &mut content).map_err(|_| Error::ContentTooLarge)?;
+        content.truncate(size);
 
         Ok(Self { topic, content })
     }
@@ -170,7 +172,7 @@ async fn net_task(
 
         loop {
             let message = channel.receive().await;
-            client
+            match client
                 .send_message(
                     &message.topic,
                     &message.content,
@@ -178,7 +180,14 @@ async fn net_task(
                     false,
                 )
                 .await
-                .unwrap();
+            {
+                Ok(()) => {}
+                Err(ReasonCode::NoMatchingSubscribers) => {}
+                Err(e) => {
+                    log::error!("{:?}", e);
+                    break;
+                }
+            }
         }
     }
 }
