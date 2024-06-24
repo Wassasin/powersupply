@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 embassy-executor    = { version = "0.5", features = ["task-arena-size-131072", "executor-thread"] }
-embassy-sync        = "0.6"
+embassy-sync        = "0.5"
 embassy-time        = { version = "0.3", features = ["generic-queue-8"] }
 embassy-futures     = { version = "0.1" }
 embassy-net         = { version = "0.4.0", features = [ "tcp", "udp", "dhcpv4", "medium-ethernet"] }
@@ -43,8 +43,8 @@ heapless = "0.8"
 nb = "1.1"
 embedded-hal = "1.0"
 embedded-hal-async = "1.0"
-device-driver = "0.6"
-device-driver-macros = "0.6"
+device-driver = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
+device-driver-macros = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
 
 bitvec = { version = "1.0", default-features = false }
 funty = { version = "2.0", default-features = false }

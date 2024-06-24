@@ -227,11 +227,12 @@ dependencies = [
 [[package]]
 name = "device-driver"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3962d4ed75eccf91c7c936c010726f28a38a5e1acd5e38fd62d43a3068a45099"
+source = "git+https://github.com/diondokter/device-driver.git#8bcff1f707084740034b0bd9f1168650457f6af2"
 dependencies = [
  "bitvec",
  "device-driver-macros",
+ "embedded-io",
+ "embedded-io-async",
  "funty",
  "num_enum",
 ]
@@ -239,8 +240,7 @@ dependencies = [
 [[package]]
 name = "device-driver-generation"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb9b16561cb251cafa13be2c6690413203ea165783a4e5042a557b3101ec1c19"
+source = "git+https://github.com/diondokter/device-driver.git#8bcff1f707084740034b0bd9f1168650457f6af2"
 dependencies = [
  "convert_case 0.6.0",
  "indexmap",
@@ -254,8 +254,7 @@ dependencies = [
 [[package]]
 name = "device-driver-macros"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80762b5002548418a5487ba55f5aa30a9f074dc3b173aeb6758171bccd65301e"
+source = "git+https://github.com/diondokter/device-driver.git#8bcff1f707084740034b0bd9f1168650457f6af2"
 dependencies = [
  "device-driver-generation",
  "proc-macro2",
@@ -1358,7 +1357,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-net",
- "embassy-sync 0.6.0",
+ "embassy-sync 0.5.0",
  "embassy-time",
  "embedded-hal 1.0.0",
  "embedded-hal-async",

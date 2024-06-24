@@ -55,14 +55,24 @@ pub struct Stats {
     pub adc: StatsAdc,
 }
 
+pub type PowerExtEnablePin = Output<'static, GpioPin<10>>;
+pub type PowerExtNIntPin = Input<'static, GpioPin<20>>;
+
+pub struct PowerExt {
+    pub i2c: I2cBusDevice,
+    pub enable_pin: PowerExtEnablePin,
+    pub nint_pin: PowerExtNIntPin,
+}
+
 pub struct Bsp {
-    pub i2c_bus: &'static mut I2cBus,
+    pub i2c_bus: &'static I2cBus,
 
     pub clocks: &'static ClocksInstance,
     pub delay: Delay,
     pub rtc: Rtc<'static>,
     pub wifi: Wifi,
     pub stats: Stats,
+    pub power_ext: PowerExt,
 }
 
 impl Bsp {
@@ -110,7 +120,7 @@ impl Bsp {
         }
 
         // I2C generic bus
-        let i2c_bus: &'static mut _ = {
+        let i2c_bus: &'static _ = {
             let i2c: I2cInstance = I2C::new_with_timeout_async(
                 peripherals.I2C0,
                 io.pins.gpio5,
@@ -154,6 +164,16 @@ impl Bsp {
             }
         };
 
+        let power_ext = {
+            let enable_pin = Output::new(io.pins.gpio10, Level::Low);
+            let nint_pin = Input::new(io.pins.gpio20, Pull::None);
+            PowerExt {
+                i2c: I2cBusDevice::new(i2c_bus),
+                enable_pin,
+                nint_pin,
+            }
+        };
+
         let mut delay = Delay::new(&clocks);
 
         log::info!("initialized");
@@ -165,6 +185,7 @@ impl Bsp {
             rtc,
             wifi,
             stats,
+            power_ext,
         }
     }
 }

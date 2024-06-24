@@ -45,6 +45,9 @@ async fn main(spawner: Spawner) {
 
     let net = systems::net::Net::init(bsp.wifi, &spawner).await;
     let stats = systems::stats::Stats::init(bsp.stats, &spawner);
+    let power_ext = systems::power_ext::PowerExt::init(bsp.power_ext, &spawner).await;
+
+    power_ext.run_test().await.unwrap();
 
     let mut subscriber = stats.subscriber();
     loop {
