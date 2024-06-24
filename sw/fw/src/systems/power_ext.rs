@@ -1,6 +1,6 @@
 use embassy_executor::Spawner;
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Instant, Timer};
 use static_cell::StaticCell;
 
 use crate::{
@@ -23,31 +23,95 @@ impl PowerExt {
         static STATS: StaticCell<PowerExt> = StaticCell::new();
         let stats = STATS.init(Self { ll });
 
+        {
+            let mut ll = stats.ll.lock().await;
+            ll.vref()
+                .write_async(|w| w.vref(0b00110100100 * 2))
+                .await
+                .unwrap();
+            ll.iout_limit()
+                .modify_async(|w| w.setting(0b111))
+                .await
+                .unwrap();
+            ll.mode()
+                .modify_async(|w| w.dischg(false).oe(false))
+                .await
+                .unwrap();
+        }
+
         spawner.must_spawn(task(bsp.nint_pin, stats));
 
         stats
     }
+}
 
-    pub async fn run_test(&self) -> Result<(), I2cError> {
-        let mut ll = self.ll.lock().await;
+fn earliest_deadline(iter: impl Iterator<Item = Option<Instant>>) -> Option<Instant> {
+    let mut res = None;
 
-        ll.vref().write_async(|w| w.vref(0b00110100100 * 2)).await?;
-        ll.iout_limit().modify_async(|w| w.setting(0b111)).await?;
-        ll.mode().modify_async(|w| w.dischg(false).oe(true)).await
+    for d in iter {
+        if let Some(d) = d {
+            if let Some(res) = res.as_mut() {
+                if *res > d {
+                    *res = d;
+                }
+            } else {
+                res = Some(d);
+            }
+        }
     }
+
+    res
 }
 
 #[embassy_executor::task]
-async fn task(nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
-    // nint_pin.wait_for_low()
+async fn task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
+    let mut enabled = false;
+    let mut backoff_until = None;
+
+    const BACKOFF_DURATION: Duration = Duration::from_millis(1000);
+    const MAX_DURATION: Duration = Duration::from_secs(5);
 
     loop {
         {
             let mut ll = system.ll.lock().await;
             let status = ll.status().read_async().await.unwrap();
+
             log::info!("{:?}", status);
+
+            if status.ocp() || status.scp() {
+                if enabled {
+                    log::error!("OCP!");
+
+                    ll.mode().modify_async(|w| w.oe(false)).await.unwrap();
+                    enabled = false;
+                    backoff_until = Some(Instant::now() + BACKOFF_DURATION);
+                }
+            } else if !enabled {
+                let activate = if let Some(until) = backoff_until {
+                    until < Instant::now()
+                } else {
+                    true
+                };
+
+                if activate {
+                    log::info!("Enabling");
+
+                    ll.mode().modify_async(|w| w.oe(true)).await.unwrap();
+                    enabled = true;
+                    backoff_until = None;
+                }
+            }
         }
 
-        Timer::after(Duration::from_millis(1000)).await;
+        let awaken_anyway_at = Instant::now() + MAX_DURATION;
+        let deadline =
+            earliest_deadline([Some(awaken_anyway_at), backoff_until].into_iter()).unwrap();
+
+        match embassy_futures::select::select(nint_pin.wait_for_falling_edge(), Timer::at(deadline))
+            .await
+        {
+            embassy_futures::select::Either::First(_) => {}
+            embassy_futures::select::Either::Second(_) => {}
+        }
     }
 }
