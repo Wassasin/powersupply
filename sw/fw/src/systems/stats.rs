@@ -1,5 +1,3 @@
-use core::fmt::Debug;
-
 use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::NoopRawMutex,
@@ -10,16 +8,7 @@ use embassy_time::{Duration, Timer};
 use serde::Serialize;
 use static_cell::StaticCell;
 
-use crate::bsp;
-
-#[derive(Serialize, Clone)]
-pub struct Millivolts(u16);
-
-impl Debug for Millivolts {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_fmt(format_args!("{}mV", self.0))
-    }
-}
+use crate::{bsp, util::Millivolts};
 
 #[derive(Serialize, Clone, Debug)]
 pub struct StatsData {

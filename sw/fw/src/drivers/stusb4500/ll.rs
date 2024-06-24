@@ -4,15 +4,15 @@ use embedded_hal_async::i2c::I2c;
 
 const MAX_TRANSACTION_SIZE: usize = 3;
 
-const ADDRESS: u8 = 0x75;
+const ADDRESS: u8 = 0x28;
 
 use super::*;
 
-pub struct Tps55289<I2C: I2c<Error = E>, E> {
+pub struct STUSB4500<I2C: I2c<Error = E>, E> {
     i2c: I2C,
 }
 
-impl<I2C, E> AsyncRegisterDevice for Tps55289<I2C, E>
+impl<I2C, E> AsyncRegisterDevice for STUSB4500<I2C, E>
 where
     I2C: I2c<Error = E>,
 {
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<I2C, E> Tps55289<I2C, E>
+impl<I2C, E> STUSB4500<I2C, E>
 where
     I2C: I2c<Error = E>,
 {
@@ -66,7 +66,7 @@ pub mod registers {
     use super::*;
 
     device_driver_macros::implement_device!(
-        impl<I2C, E> Tps55289<I2C, E> where
+        impl<I2C, E> STUSB4500<I2C, E> where
         I2C: I2c<Error = E>{
             register vref {
                 type RWType = RW;
@@ -74,45 +74,7 @@ pub mod registers {
                 const ADDRESS: u8 = 0x00;
                 const SIZE_BITS: usize = 16;
 
-                vref: u16 as VRef = 0..11,
-            },
-            register iout_limit {
-                type RWType = RW;
-                type ByteOrder = LE;
-                const ADDRESS: u8 = 0x02;
-                const SIZE_BITS: usize = 8;
-
-                setting: u8 = 0..7,
-                en: bool = 7,
-            },
-            register vout_fs {
-                type RWType = RW;
-                const ADDRESS: u8 = 0x04;
-                const SIZE_BITS: usize = 8;
-
-                intfb: u8 as IntFB = 0..2,
-                fb: bool = 7,
-            },
-            register mode {
-                type RWType = RW;
-                const ADDRESS: u8 = 0x06;
-                const SIZE_BITS: usize = 8;
-
-                fpwm: bool = 1,
-                dischg: bool = 4,
-                hiccup: bool = 5,
-                fswdbl: bool = 6,
-                oe: bool = 7,
-            },
-            register status {
-                type RWType = R;
-                const ADDRESS: u8 = 0x07;
-                const SIZE_BITS: usize = 8;
-
-                status: u8 as OperatingStatus = 0..2,
-                ovp: bool = 5,
-                ocp: bool = 6,
-                scp: bool = 7,
+                vref: u16 = 0..11,
             },
         }
     );

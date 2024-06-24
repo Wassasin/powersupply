@@ -5,7 +5,8 @@ use static_cell::StaticCell;
 
 use crate::{
     bsp::{self, I2cBusDevice, I2cError},
-    drivers::tps55289::ll::Tps55289,
+    drivers::tps55289::{ll::Tps55289, IntFB, VRef},
+    util::Millivolts,
 };
 
 pub struct PowerExt {
@@ -23,14 +24,16 @@ impl PowerExt {
         static STATS: StaticCell<PowerExt> = StaticCell::new();
         let stats = STATS.init(Self { ll });
 
+        let ratio = IntFB::Ratio0_0564;
+        let vref = VRef::from_feedback(Millivolts(9000), ratio);
+
         {
             let mut ll = stats.ll.lock().await;
-            ll.vref()
-                .write_async(|w| w.vref(0b00110100100 * 2))
-                .await
-                .unwrap();
+
+            ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
+            ll.vout_fs().modify_async(|w| w.intfb(ratio)).await.unwrap();
             ll.iout_limit()
-                .modify_async(|w| w.setting(0b111))
+                .modify_async(|w| w.setting(0x10))
                 .await
                 .unwrap();
             ll.mode()
