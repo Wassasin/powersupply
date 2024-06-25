@@ -45,6 +45,7 @@ async fn main(spawner: Spawner) {
 
     let net = systems::net::Net::init(bsp.wifi, &spawner).await;
     let stats = systems::stats::Stats::init(bsp.stats, &spawner);
+    let usb_pd = systems::usb_pd::USBPD::init(bsp.usb_pd, &spawner).await;
     let power_ext = systems::power_ext::PowerExt::init(bsp.power_ext, &spawner).await;
 
     let mut subscriber = stats.subscriber();

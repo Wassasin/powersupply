@@ -43,6 +43,7 @@ heapless = "0.8"
 nb = "1.1"
 embedded-hal = "1.0"
 embedded-hal-async = "1.0"
+embedded-io = "0.6"
 device-driver = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
 device-driver-macros = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
 
@@ -54,6 +55,8 @@ num_enum = { version = "0.7", default-features = false }
 rust-mqtt = { version = "0.3.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde-json-core = "0.5"
+
+stusb4500 = "0.1.0"
 
 [features]
 

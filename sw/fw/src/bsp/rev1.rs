@@ -64,6 +64,15 @@ pub struct PowerExt {
     pub nint_pin: PowerExtNIntPin,
 }
 
+pub type USBPDResetPin = Output<'static, GpioPin<7>>;
+pub type USBPDIntPin = Input<'static, GpioPin<21>>;
+
+pub struct USBPD {
+    pub reset_pin: USBPDResetPin,
+    pub int_pin: USBPDIntPin,
+    pub i2c: I2cBusDevice,
+}
+
 pub struct Bsp {
     pub i2c_bus: &'static I2cBus,
 
@@ -73,6 +82,7 @@ pub struct Bsp {
     pub wifi: Wifi,
     pub stats: Stats,
     pub power_ext: PowerExt,
+    pub usb_pd: USBPD,
 }
 
 impl Bsp {
@@ -127,7 +137,7 @@ impl Bsp {
                 io.pins.gpio4,
                 400u32.kHz(),
                 &clocks,
-                Some(20),
+                Some(40),
             );
 
             static I2C_BUS: StaticCell<I2cBus> = StaticCell::new();
@@ -164,14 +174,16 @@ impl Bsp {
             }
         };
 
-        let power_ext = {
-            let enable_pin = Output::new(io.pins.gpio10, Level::Low);
-            let nint_pin = Input::new(io.pins.gpio20, Pull::None);
-            PowerExt {
-                i2c: I2cBusDevice::new(i2c_bus),
-                enable_pin,
-                nint_pin,
-            }
+        let power_ext = PowerExt {
+            i2c: I2cBusDevice::new(i2c_bus),
+            enable_pin: Output::new(io.pins.gpio10, Level::Low),
+            nint_pin: Input::new(io.pins.gpio20, Pull::None),
+        };
+
+        let usb_pd = USBPD {
+            reset_pin: Output::new(io.pins.gpio7, Level::High),
+            int_pin: Input::new(io.pins.gpio21, Pull::None),
+            i2c: I2cBusDevice::new(i2c_bus),
         };
 
         let mut delay = Delay::new(&clocks);
@@ -186,6 +198,7 @@ impl Bsp {
             wifi,
             stats,
             power_ext,
+            usb_pd,
         }
     }
 }
