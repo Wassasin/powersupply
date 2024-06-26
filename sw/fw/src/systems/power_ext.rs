@@ -36,10 +36,15 @@ impl PowerExt {
         {
             let mut ll = stats.ll.lock().await;
 
+            const CURRENT_SENSE_MILLIOHM: u32 = 20;
+            let limit_ma = 500;
+            let limit_uv = limit_ma * CURRENT_SENSE_MILLIOHM;
+            let limit_value = (limit_uv / 500) as u8;
+
             ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
             ll.vout_fs().modify_async(|w| w.intfb(ratio)).await.unwrap();
             ll.iout_limit()
-                .modify_async(|w| w.setting(0x10))
+                .modify_async(|w| w.setting(limit_value))
                 .await
                 .unwrap();
             ll.mode()
