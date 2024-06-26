@@ -91,12 +91,6 @@ dependencies = [
 
 [[package]]
 name = "bitfield"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d7e60934ceec538daadb9d8432424ed043a904d8e0243f3c6446bce549a46ac"
-
-[[package]]
-name = "bitfield"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c821a6e124197eb56d907ccc2188eab1038fb919c914f47976e64dd8dbc855d1"
@@ -598,7 +592,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44f1bf3b1b34bbeb59e24e630f26e21b95f9c2bb7c0a53361ae5a97c67936566"
 dependencies = [
  "basic-toml",
- "bitfield 0.15.0",
+ "bitfield",
  "bitflags 2.5.0",
  "cfg-if",
  "critical-section",
@@ -1355,6 +1349,7 @@ dependencies = [
 name = "slakkotron"
 version = "0.1.0"
 dependencies = [
+ "bitfield",
  "bitvec",
  "derive_more",
  "device-driver",
@@ -1387,7 +1382,6 @@ dependencies = [
  "serde",
  "serde-json-core",
  "static_cell",
- "stusb4500",
 ]
 
 [[package]]
@@ -1472,18 +1466,6 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 2.0.66",
-]
-
-[[package]]
-name = "stusb4500"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01382981bd26aae5453c60ff3acaa859440c4535197a54da00db0fe10cd71576"
-dependencies = [
- "bitfield 0.14.0",
- "bitflags 2.5.0",
- "byteorder",
- "embedded-hal 0.2.7",
 ]
 
 [[package]]

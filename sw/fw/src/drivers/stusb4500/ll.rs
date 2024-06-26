@@ -99,7 +99,14 @@ pub mod registers {
                 const ADDRESS: u8 = 0x1A;
                 const SIZE_BITS: usize = 8;
 
-                send_command: u8 = 0..5,
+                send_command: u8 = 0..6,
+            },
+            register PolicyEngineFSM {
+                type RWType = R;
+                const ADDRESS: u8 = 0x29;
+                const SIZE_BITS: usize = 8;
+
+                pe_fsm_state: u8 as PolicyEngineFSMState = 0..8,
             },
             register GPIOSwGPIO {
                 type RWType = RW;
@@ -117,13 +124,59 @@ pub mod registers {
             },
             register TXHeader {
                 type RWType = RW;
-                type ByteOrder = LE;
                 const ADDRESS: u8 = 0x51;
-                const SIZE_BITS: usize = 16;
+                const SIZE_BITS: usize = 8;
 
-                tx_header: u16 = 0..16,
+                tx_header: u16 = 0..8,
             },
             buffer RWBuffer: RW = 0x53,
+            //DPM_PDO_NUMB
+            register DPMPDONUMB {
+                type RWType = RW;
+                const ADDRESS: u8 = 0x70;
+                const SIZE_BITS: usize = 8;
+
+                number: u8 = 0..3,
+            },
+            register DPMSNKPDO1 {
+                type RWType = RW;
+                type ByteOrder = LE;
+                const ADDRESS: u8 = 0x85;
+                const SIZE_BITS: usize = 32;
+
+                value: u32 = 0..32,
+            },
+            register DPMSNKPDO2 {
+                type RWType = RW;
+                type ByteOrder = LE;
+                const ADDRESS: u8 = 0x89;
+                const SIZE_BITS: usize = 32;
+
+                value: u32 = 0..32,
+            },
+            register DPMSNKPDO3 {
+                type RWType = RW;
+                type ByteOrder = LE;
+                const ADDRESS: u8 = 0x8D;
+                const SIZE_BITS: usize = 32;
+
+                value: u32 = 0..32,
+            },
+            register RDOStatus {
+                type RWType = R;
+                type ByteOrder = LE;
+                const ADDRESS: u8 = 0x91;
+                const SIZE_BITS: usize = 32;
+
+                max_current: u16 = 0..10,
+                current: u16 = 10..20,
+                extended_supported: bool = 23,
+                no_usb_suspend: bool = 24,
+                usb_comms_capable: bool = 25,
+                capability_mismatch: bool = 26,
+                give_back: bool = 27,
+                object_position: u8 = 28..32,
+            },
             register NVMPassword {
                 type RWType = RW;
                 const ADDRESS: u8 = 0x95;

@@ -6,15 +6,21 @@ use static_cell::StaticCell;
 use crate::{
     bsp::{self, I2cBusDevice, I2cError},
     drivers::tps55289::{ll::Tps55289, IntFB, VRef},
+    systems::usb_pd::USBPD,
     util::Millivolts,
 };
 
 pub struct PowerExt {
     ll: Mutex<NoopRawMutex, Tps55289<I2cBusDevice, I2cError>>,
+    usbpd: &'static USBPD,
 }
 
 impl PowerExt {
-    pub async fn init(mut bsp: bsp::PowerExt, spawner: &Spawner) -> &'static Self {
+    pub async fn init(
+        mut bsp: bsp::PowerExt,
+        usbpd: &'static USBPD,
+        spawner: &Spawner,
+    ) -> &'static Self {
         let ll = Mutex::new(Tps55289::new(bsp.i2c));
 
         bsp.enable_pin.set_high();
@@ -22,7 +28,7 @@ impl PowerExt {
         Timer::after(Duration::from_millis(50)).await;
 
         static STATS: StaticCell<PowerExt> = StaticCell::new();
-        let stats = STATS.init(Self { ll });
+        let stats = STATS.init(Self { ll, usbpd });
 
         let ratio = IntFB::Ratio0_0564;
         let vref = VRef::from_feedback(Millivolts(9000), ratio);
@@ -88,6 +94,8 @@ async fn task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
                     ll.mode().modify_async(|w| w.oe(false)).await.unwrap();
                     enabled = false;
                     backoff_until = Some(Instant::now() + BACKOFF_DURATION);
+
+                    system.usbpd.set_pin(false).await;
                 }
             } else if !enabled {
                 let activate = if let Some(until) = backoff_until {
@@ -102,6 +110,8 @@ async fn task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
                     ll.mode().modify_async(|w| w.oe(true)).await.unwrap();
                     enabled = true;
                     backoff_until = None;
+
+                    system.usbpd.set_pin(true).await;
                 }
             }
         }
