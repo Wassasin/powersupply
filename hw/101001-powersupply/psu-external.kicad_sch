@@ -4028,7 +4028,7 @@
 		)
 		(uuid "16c03eb9-5fdd-4340-8ec4-bdcee2cbba71")
 	)
-	(text "0.5V-2V"
+	(text "5V-20V"
 		(exclude_from_sim no)
 		(at 73.66 123.19 0)
 		(effects
@@ -4436,7 +4436,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "887kOhm"
+		(property "Value" "100kOhm"
 			(at 78.74 111.76 90)
 			(effects
 				(font
@@ -4472,7 +4472,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C137930"
+		(property "LCSC" "C25741"
 			(at 80.01 107.95 0)
 			(effects
 				(font
@@ -7076,9 +7076,9 @@
 		(at 82.55 146.05 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "9053f68f-db86-4aba-9b03-4f24539d0394")
 		(property "Reference" "R305"
 			(at 85.09 146.05 0)

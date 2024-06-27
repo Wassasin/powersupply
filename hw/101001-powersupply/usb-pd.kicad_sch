@@ -1553,16 +1553,6 @@
 	)
 	(wire
 		(pts
-			(xy 146.05 68.58) (xy 146.05 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0cfc4853-0a77-4695-80b2-77d8fdc8630f")
-	)
-	(wire
-		(pts
 			(xy 128.27 97.79) (xy 130.81 97.79)
 		)
 		(stroke
@@ -1683,16 +1673,6 @@
 	)
 	(wire
 		(pts
-			(xy 138.43 68.58) (xy 146.05 68.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3b69041e-7bc0-4c73-9729-4693e1ce578a")
-	)
-	(wire
-		(pts
 			(xy 130.81 90.17) (xy 128.27 90.17)
 		)
 		(stroke
@@ -1710,16 +1690,6 @@
 			(type default)
 		)
 		(uuid "463f5c77-2717-4d3a-a894-99d5343f5f56")
-	)
-	(wire
-		(pts
-			(xy 138.43 72.39) (xy 138.43 68.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4aebbd51-9402-4e94-becf-b3689362be44")
 	)
 	(wire
 		(pts
@@ -1820,6 +1790,16 @@
 			(type default)
 		)
 		(uuid "9bcf401e-4fe0-4390-9971-5cab2a1ed272")
+	)
+	(wire
+		(pts
+			(xy 146.05 68.58) (xy 146.05 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a06761ef-bdfd-4037-a733-74f5a1450ff2")
 	)
 	(wire
 		(pts
@@ -2033,6 +2013,16 @@
 	)
 	(wire
 		(pts
+			(xy 146.05 50.8) (xy 146.05 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f18c824b-8f5e-4a21-8f8f-97565f032f28")
+	)
+	(wire
+		(pts
 			(xy 128.27 90.17) (xy 128.27 92.71)
 		)
 		(stroke
@@ -2082,6 +2072,17 @@
 			(justify left bottom)
 		)
 		(uuid "24073292-54c5-4108-95be-1dcab31c107c")
+	)
+	(label "PD_VSYS"
+		(at 146.05 78.74 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "359ae9ab-61cc-460e-8c40-8e80189ef005")
 	)
 	(label "ADDR0"
 		(at 130.81 118.11 180)
@@ -2595,6 +2596,83 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 146.05 64.77 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "24317eec-0848-4773-90f8-abc4195462bd")
+		(property "Reference" "R506"
+			(at 148.59 60.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Value" "0ohm"
+			(at 147.32 71.12 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 144.272 64.77 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 146.05 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 146.05 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2906877"
+			(at 146.05 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "65061454-5486-4c1f-aa9f-d1a78d28bc50")
+		)
+		(pin "2"
+			(uuid "ee6739f4-2dc4-49d8-930d-8aa09c70e918")
+		)
+		(instances
+			(project "101001-powersupply"
+				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/b639098a-fdca-417f-a845-46a2c109f1cc"
+					(reference "R506")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 179.07 93.98 0)
 		(unit 1)
@@ -2865,6 +2943,72 @@
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/b639098a-fdca-417f-a845-46a2c109f1cc"
 					(reference "#PWR0507")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 146.05 50.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8124bd9d-4de9-4187-a285-a62ac7d45f22")
+		(property "Reference" "#PWR0508"
+			(at 146.05 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VDD"
+			(at 146.05 45.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 146.05 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 146.05 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 146.05 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b8fd2342-c80a-4744-8fc8-88e20a365f16")
+		)
+		(instances
+			(project "101001-powersupply"
+				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/b639098a-fdca-417f-a845-46a2c109f1cc"
+					(reference "#PWR0508")
 					(unit 1)
 				)
 			)
@@ -3235,72 +3379,6 @@
 			(project "101001-powersupply"
 				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/b639098a-fdca-417f-a845-46a2c109f1cc"
 					(reference "D501")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 138.43 72.39 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ba358ea8-d1be-48a4-b92f-223a8e583771")
-		(property "Reference" "#PWR0502"
-			(at 138.43 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 138.43 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 72.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 72.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 138.43 72.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "14a899db-6ad8-4da5-8bb6-853495d3ddef")
-		)
-		(instances
-			(project "101001-powersupply"
-				(path "/5b6c9e65-6d2e-4a49-a6e0-6edf7b37266c/b639098a-fdca-417f-a845-46a2c109f1cc"
-					(reference "#PWR0502")
 					(unit 1)
 				)
 			)
