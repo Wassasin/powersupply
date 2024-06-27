@@ -1,5 +1,5 @@
 use embassy_executor::Spawner;
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
 use static_cell::StaticCell;
 
@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub struct USBPD {
-    hl: Mutex<NoopRawMutex, STUSB4500<I2cBusDevice, I2cError>>,
+    hl: Mutex<CriticalSectionRawMutex, STUSB4500<I2cBusDevice, I2cError>>,
 }
 
 const NVM_DATA: [[u8; 8]; 5] = [

@@ -1,5 +1,5 @@
-use embassy_executor::Spawner;
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
+use embassy_executor::{SendSpawner, Spawner};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Instant, Timer};
 use static_cell::StaticCell;
 
@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub struct PowerExt {
-    ll: Mutex<NoopRawMutex, Tps55289<I2cBusDevice, I2cError>>,
+    ll: Mutex<CriticalSectionRawMutex, Tps55289<I2cBusDevice, I2cError>>,
     usbpd: &'static USBPD,
 }
 
@@ -19,7 +19,7 @@ impl PowerExt {
     pub async fn init(
         mut bsp: bsp::PowerExt,
         usbpd: &'static USBPD,
-        spawner: &Spawner,
+        spawner: &SendSpawner,
     ) -> &'static Self {
         let ll = Mutex::new(Tps55289::new(bsp.i2c));
 
@@ -27,14 +27,14 @@ impl PowerExt {
 
         Timer::after(Duration::from_millis(50)).await;
 
-        static STATS: StaticCell<PowerExt> = StaticCell::new();
-        let stats = STATS.init(Self { ll, usbpd });
+        static SYSTEM: StaticCell<PowerExt> = StaticCell::new();
+        let system = SYSTEM.init(Self { ll, usbpd });
 
         let ratio = IntFB::Ratio0_0564;
         let vref = VRef::from_feedback(Millivolts(9000), ratio);
 
         {
-            let mut ll = stats.ll.lock().await;
+            let mut ll = system.ll.lock().await;
 
             const CURRENT_SENSE_MILLIOHM: u32 = 20;
             let limit_ma = 500;
@@ -53,9 +53,9 @@ impl PowerExt {
                 .unwrap();
         }
 
-        spawner.must_spawn(task(bsp.nint_pin, stats));
+        spawner.must_spawn(task(bsp.nint_pin, system));
 
-        stats
+        system
     }
 }
 

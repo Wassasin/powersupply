@@ -1,5 +1,9 @@
 use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
+use embassy_executor::SendSpawner;
+use embassy_sync::{
+    blocking_mutex::raw::{CriticalSectionRawMutex, NoopRawMutex},
+    mutex::Mutex,
+};
 use embedded_hal_async::i2c;
 use esp_hal::{
     analog::adc::{Adc, AdcCalBasic, AdcCalCurve, AdcConfig, AdcPin},
@@ -20,14 +24,15 @@ use esp_hal::{
     timer::{systimer::SystemTimer, timg::TimerGroup},
     Async, Blocking,
 };
+use esp_hal_embassy::InterruptExecutor;
 use esp_wifi::wifi::{WifiController, WifiDevice, WifiStaDevice};
 use static_cell::StaticCell;
 
 pub type I2cInstance = I2C<'static, I2C0, Async>;
 pub type ClocksInstance = Clocks<'static>;
 
-pub type I2cBus = Mutex<NoopRawMutex, I2cInstance>;
-pub type I2cBusDevice = I2cDevice<'static, NoopRawMutex, I2cInstance>;
+pub type I2cBus = Mutex<CriticalSectionRawMutex, I2cInstance>;
+pub type I2cBusDevice = I2cDevice<'static, CriticalSectionRawMutex, I2cInstance>;
 pub type I2cError = <I2cBusDevice as i2c::ErrorType>::Error;
 
 pub struct Wifi {
@@ -83,6 +88,8 @@ pub struct Bsp {
     pub stats: Stats,
     pub power_ext: PowerExt,
     pub usb_pd: USBPD,
+
+    pub high_prio_spawner: SendSpawner,
 }
 
 impl Bsp {
@@ -188,6 +195,13 @@ impl Bsp {
 
         let mut delay = Delay::new(&clocks);
 
+        static EXECUTOR: StaticCell<InterruptExecutor<2>> = StaticCell::new();
+        let executor =
+            InterruptExecutor::new(system.software_interrupt_control.software_interrupt2);
+        let executor = EXECUTOR.init(executor);
+
+        let high_prio_spawner = executor.start(esp_hal::interrupt::Priority::Priority3);
+
         log::info!("initialized");
 
         Bsp {
@@ -199,6 +213,7 @@ impl Bsp {
             stats,
             power_ext,
             usb_pd,
+            high_prio_spawner,
         }
     }
 }
