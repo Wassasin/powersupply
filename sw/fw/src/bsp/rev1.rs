@@ -25,6 +25,7 @@ use esp_hal::{
     Async, Blocking,
 };
 use esp_hal_embassy::InterruptExecutor;
+use esp_storage::FlashStorage;
 use esp_wifi::wifi::{WifiController, WifiDevice, WifiStaDevice};
 use static_cell::StaticCell;
 
@@ -76,6 +77,10 @@ pub struct USBPD {
     pub reset_pin: USBPDResetPin,
     pub int_pin: USBPDIntPin,
     pub i2c: I2cBusDevice,
+}
+
+pub struct Storage {
+    flash: FlashStorage,
 }
 
 pub struct Bsp {

@@ -27,6 +27,8 @@ esp32c3 = { version = "0.23" }
 esp-println = { version = "0.9", default-features = false, features = ["esp32c3", "log", "jtag-serial"] }
 esp-wifi = { version = "0.6", default-features = false, features = ["esp32c3", "log", "async", "embassy-net", "wifi", "wifi-default", "utils"] }
 embedded-io-async   = "0.6"
+esp-storage = { version = "0.3", features = ["esp32c3"] }
+esp-partition-table = "0.1"
 
 static_cell = "2.1"
 derive_more = "0.99"
