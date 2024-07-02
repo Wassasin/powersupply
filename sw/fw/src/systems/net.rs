@@ -46,12 +46,14 @@ pub enum Error {
 
 pub enum Topic {
     Stats,
+    Record,
 }
 
 impl Topic {
     pub fn to_str(&self) -> Result<String<TOPIC_SIZE>, ()> {
         match self {
             Topic::Stats => String::try_from("slakkotron/stats").map_err(|_| ()),
+            Topic::Record => String::try_from("slakkotron/record").map_err(|_| ()),
         }
     }
 }
@@ -97,7 +99,9 @@ impl Net {
 
         spawner.spawn(connection_task(wifi.controller)).unwrap();
         spawner.spawn(stack_task(&stack)).unwrap();
-        spawner.spawn(net_task(&stack, &net.channel)).unwrap();
+        spawner
+            .spawn(net_task(&stack, &net.channel, wifi.seed))
+            .unwrap();
 
         net
     }
@@ -111,6 +115,7 @@ impl Net {
 async fn net_task(
     stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
     channel: &'static DataChannel<Message>,
+    seed: u64,
 ) {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
@@ -138,37 +143,38 @@ async fn net_task(
 
         let endpoint = IpEndpoint::new(Ipv4Address::new(192, 168, 1, 2).into(), 1883);
 
-        log::info!("connecting...");
+        log::info!("Connecting...");
         let r = socket.connect(endpoint).await;
         if let Err(e) = r {
             log::info!("connect error: {:?}", e);
             continue;
         }
-        log::info!("connected!");
+        log::info!("Connected!");
 
         let mut config: ClientConfig<'_, 20, CountingRng> = ClientConfig::new(
             rust_mqtt::client::client_config::MqttVersion::MQTTv5,
-            CountingRng(20000),
+            CountingRng(seed % (u16::MAX as u64)),
         );
 
         config.add_max_subscribe_qos(QualityOfService::QoS1);
         config.add_client_id("slakkotron");
         config.max_packet_size = 20;
 
-        let mut recv_buffer = [0; 512];
-        let mut write_buffer = [0; 512];
+        let mut recv_buffer = [0; 256];
+        let mut write_buffer = [0; 256];
 
         let mut client = MqttClient::new(
             socket,
             &mut write_buffer,
-            256,
+            512,
             &mut recv_buffer,
-            256,
+            512,
             config,
         );
 
         log::info!("Connecting to broker...");
         client.connect_to_broker().await.unwrap();
+        log::info!("Connected");
 
         loop {
             let message = channel.receive().await;

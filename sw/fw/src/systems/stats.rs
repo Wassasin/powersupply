@@ -1,32 +1,24 @@
 use embassy_executor::Spawner;
-use embassy_sync::{
-    blocking_mutex::raw::NoopRawMutex,
-    mutex::Mutex,
-    pubsub::{PubSubChannel, Subscriber},
-};
+use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
 use serde::Serialize;
 use static_cell::StaticCell;
 
-use crate::{bsp, util::Millivolts};
+use crate::{
+    bsp,
+    util::{DataChannel, DataSubscriber, Millivolts},
+};
 
 #[derive(Serialize, Clone, Debug)]
-pub struct StatsData {
+pub struct Data {
     pub vsupply_mv: Millivolts,
     pub vprog_mv: Millivolts,
     pub vout_mv: Millivolts,
 }
 
-const DATA_CAP: usize = 1;
-const DATA_SUBS: usize = 4;
-const DATA_PUBS: usize = 1;
-
-type DataChannel<T> = PubSubChannel<NoopRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
-pub type DataSubscriber<T> = Subscriber<'static, NoopRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
-
 pub struct Stats {
-    data: Mutex<NoopRawMutex, Option<StatsData>>,
-    notifier: DataChannel<StatsData>,
+    data: Mutex<NoopRawMutex, Option<Data>>,
+    notifier: DataChannel<Data>,
 }
 
 impl Stats {
@@ -42,11 +34,11 @@ impl Stats {
         stats
     }
 
-    pub async fn latest_data(&self) -> Option<StatsData> {
+    pub async fn latest_data(&self) -> Option<Data> {
         self.data.lock().await.clone()
     }
 
-    pub fn subscriber(&'static self) -> DataSubscriber<StatsData> {
+    pub fn subscriber(&'static self) -> DataSubscriber<Data> {
         self.notifier.subscriber().unwrap()
     }
 }
@@ -96,7 +88,7 @@ async fn task(mut bsp: bsp::Stats, system: &'static Stats) {
         let vprog_mv = factor_vprog(vprog);
         let vout_mv = factor_high(vout);
 
-        let data = StatsData {
+        let data = Data {
             vsupply_mv,
             vprog_mv,
             vout_mv,

@@ -2,16 +2,20 @@ use core::ops::Range;
 
 use derive_more::From;
 use embassy_embedded_hal::adapter::BlockingAsync;
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use esp_partition_table::{DataPartitionType, PartitionEntry, PartitionTable, PartitionType};
 use esp_storage::{FlashStorage, FlashStorageError};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use sequential_storage::{cache::KeyPointerCache, map::SerializationError};
+use sequential_storage::{cache::NoCache, map::SerializationError};
 use serde::{Deserialize, Serialize};
+use static_cell::StaticCell;
 
 const BUFFER_SIZE: usize = 128;
-type Cache = KeyPointerCache<10, StorageKey, 10>;
+type Cache = NoCache;
 
-pub struct Storage {
+pub struct Storage(Mutex<CriticalSectionRawMutex, Inner>);
+
+struct Inner {
     storage: BlockingAsync<FlashStorage>,
     partition: PartitionEntry,
     cache: Cache,
@@ -23,7 +27,8 @@ struct Marker;
 #[derive(Clone, Copy, PartialEq, Eq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum StorageKey {
-    Marker = 0x00,
+    Marker = 0x01,
+    RecordData = 0x02,
 }
 
 pub trait StorageEntry: Serialize + for<'a> Deserialize<'a> {
@@ -46,7 +51,8 @@ impl sequential_storage::map::Key for StorageKey {
     }
 
     fn deserialize_from(buffer: &[u8]) -> Result<(Self, usize), SerializationError> {
-        if buffer.len() != 1 {
+        if buffer.len() < 1 {
+            log::error!("{:?}", buffer);
             return Err(SerializationError::InvalidFormat);
         }
 
@@ -85,43 +91,8 @@ fn range(p: &PartitionEntry) -> Range<u32> {
     p.offset..(p.offset + p.size as u32)
 }
 
-impl Storage {
-    pub async fn init() -> Self {
-        let partition_table = PartitionTable::default();
-        let mut storage = FlashStorage::new();
-
-        let mut found_nvs = None;
-        log::info!("Scanning partition table");
-        for entry in partition_table.iter_storage(&mut storage, true) {
-            let entry = entry.unwrap();
-            log::debug!("{:?}", entry);
-
-            if entry.type_ == PartitionType::Data(DataPartitionType::Nvs) {
-                found_nvs = Some(entry);
-            }
-        }
-
-        let found_nvs = found_nvs.expect("No NVS partition found");
-
-        log::info!(
-            "Using partition \"{}\", offset {:#x}, size {:#x} bytes",
-            found_nvs.name(),
-            found_nvs.offset,
-            found_nvs.size
-        );
-
-        let mut res = Self {
-            storage: BlockingAsync::new(storage),
-            partition: found_nvs,
-            cache: Cache::new(),
-        };
-
-        res.ensure_initialized().await.unwrap();
-
-        res
-    }
-
-    pub async fn ensure_initialized(&mut self) -> Result<(), Error> {
+impl Inner {
+    async fn ensure_initialized(&mut self) -> Result<(), Error> {
         match self.fetch::<Marker>().await {
             Ok(Some(Marker)) => {
                 log::debug!("Marker detected");
@@ -174,5 +145,53 @@ impl Storage {
         )
         .await?;
         Ok(())
+    }
+}
+
+impl Storage {
+    pub async fn init() -> &'static Self {
+        let partition_table = PartitionTable::default();
+        let mut storage = FlashStorage::new();
+
+        let mut found_nvs = None;
+        log::info!("Scanning partition table");
+        for entry in partition_table.iter_storage(&mut storage, true) {
+            let entry = entry.unwrap();
+            log::debug!("{:?}", entry);
+
+            if entry.type_ == PartitionType::Data(DataPartitionType::Nvs) {
+                found_nvs = Some(entry);
+            }
+        }
+
+        let found_nvs = found_nvs.expect("No NVS partition found");
+
+        log::info!(
+            "Using partition \"{}\", offset {:#x}, size {:#x} bytes",
+            found_nvs.name(),
+            found_nvs.offset,
+            found_nvs.size
+        );
+
+        let mut inner = Inner {
+            storage: BlockingAsync::new(storage),
+            partition: found_nvs,
+            cache: Cache::new(),
+        };
+
+        inner.ensure_initialized().await.unwrap();
+
+        static SYSTEM: StaticCell<Storage> = StaticCell::new();
+        SYSTEM.init(Self(Mutex::new(inner)))
+    }
+
+    pub async fn store<T: StorageEntry>(&self, value: T) -> Result<(), Error> {
+        let mut guard = self.0.lock().await;
+        guard.store(value).await
+    }
+
+    pub async fn fetch<T: StorageEntry>(&self) -> Result<Option<T>, Error> {
+        let mut guard = self.0.lock().await;
+        guard.fetch().await
     }
 }
