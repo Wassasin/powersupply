@@ -132,6 +132,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cobs"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67ba02a97a2bd10f4b59b25c7973101c79642302776489e030cd13cdab09ed15"
+
+[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -931,6 +937,7 @@ dependencies = [
  "atomic-polyfill",
  "hash32 0.2.1",
  "rustc_version",
+ "serde",
  "spin",
  "stable_deref_trait",
 ]
@@ -1158,6 +1165,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "postcard"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a55c51ee6c0db07e68448e336cf8ea4131a620edefebf9893e759b2d793420f8"
+dependencies = [
+ "cobs",
+ "heapless 0.7.17",
+ "serde",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1332,6 +1350,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
 
 [[package]]
+name = "sequential-storage"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d25123e754473ed08bcc4e0ef61f0a733662872885e533ffdf03771119712fc"
+dependencies = [
+ "embedded-storage-async",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1390,6 +1417,8 @@ dependencies = [
  "embedded-hal-async",
  "embedded-io",
  "embedded-io-async",
+ "embedded-storage",
+ "embedded-storage-async",
  "esp-backtrace",
  "esp-hal",
  "esp-hal-embassy",
@@ -1406,7 +1435,9 @@ dependencies = [
  "log",
  "nb 1.1.0",
  "num_enum",
+ "postcard",
  "rust-mqtt",
+ "sequential-storage",
  "serde",
  "serde-json-core",
  "static_cell",

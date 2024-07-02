@@ -27,8 +27,11 @@ esp32c3 = { version = "0.23" }
 esp-println = { version = "0.9", default-features = false, features = ["esp32c3", "log", "jtag-serial"] }
 esp-wifi = { version = "0.6", default-features = false, features = ["esp32c3", "log", "async", "embassy-net", "wifi", "wifi-default", "utils"] }
 embedded-io-async   = "0.6"
-esp-storage = { version = "0.3", features = ["esp32c3"] }
-esp-partition-table = "0.1"
+esp-storage = { version = "0.3", features = ["esp32c3", "nor-flash"] }
+embedded-storage = "0.3"
+embedded-storage-async = "0.4"
+esp-partition-table = { version = "0.1", features = ["md5"] }
+sequential-storage = "2.0"
 
 static_cell = "2.1"
 derive_more = "0.99"
@@ -58,6 +61,7 @@ num_enum = { version = "0.7", default-features = false }
 rust-mqtt = { version = "0.3.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde-json-core = "0.5"
+postcard = "1.0"
 
 [features]
 
