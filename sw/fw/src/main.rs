@@ -44,38 +44,53 @@ async fn main(spawner: Spawner) {
     let bsp = Bsp::init(Peripherals::take());
 
     let storage = systems::storage::Storage::init().await;
+    let config = systems::config::Config::init(storage, &spawner).await;
     let record = systems::record::Record::init(storage, &spawner).await;
     let stats = systems::stats::Stats::init(bsp.stats, &spawner);
 
     let net = systems::net::Net::init(bsp.wifi, &spawner).await;
     let usb_pd = systems::usb_pd::USBPD::init(bsp.usb_pd, &spawner).await;
-    let power_ext =
-        systems::power_ext::PowerExt::init(bsp.power_ext, usb_pd, record, &bsp.high_prio_spawner)
-            .await;
+    let _power_ext = systems::power_ext::PowerExt::init(
+        bsp.power_ext,
+        usb_pd,
+        record,
+        config,
+        &bsp.high_prio_spawner,
+    )
+    .await;
 
     let mut stats_subscriber = stats.subscriber();
     let mut record_subscriber = record.subscriber();
+    let mut config_subscriber = config.subscriber();
     loop {
-        use embassy_futures::select::Either;
+        use embassy_futures::select::Either3;
         use embassy_sync::pubsub::WaitResult;
 
-        match embassy_futures::select::select(
+        match embassy_futures::select::select3(
             stats_subscriber.next_message(),
             record_subscriber.next_message(),
+            config_subscriber.next_message(),
         )
         .await
         {
-            Either::First(WaitResult::Message(message)) => {
+            Either3::First(WaitResult::Message(message)) => {
                 log::info!("Stats {:#?}", message);
                 net.send(
                     systems::net::Message::new(&systems::net::Topic::Stats, &message).unwrap(),
                 )
                 .await;
             }
-            Either::Second(WaitResult::Message(message)) => {
+            Either3::Second(WaitResult::Message(message)) => {
                 log::info!("Record {:#?}", message);
                 net.send(
                     systems::net::Message::new(&systems::net::Topic::Record, &message).unwrap(),
+                )
+                .await;
+            }
+            Either3::Third(WaitResult::Message(message)) => {
+                log::info!("Config {:#?}", message);
+                net.send(
+                    systems::net::Message::new(&systems::net::Topic::Config, &message).unwrap(),
                 )
                 .await;
             }

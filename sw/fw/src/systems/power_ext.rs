@@ -1,14 +1,17 @@
 use embassy_executor::SendSpawner;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, pubsub::WaitResult,
+};
 use embassy_time::{Duration, Instant, Timer};
 use static_cell::StaticCell;
 
 use crate::{
     bsp::{self, I2cBusDevice, I2cError},
     drivers::tps55289::{ll::Tps55289, IntFB, VRef},
-    systems::{record::Record, usb_pd::USBPD},
-    util::Millivolts,
+    systems::{config::Config, record::Record, usb_pd::USBPD},
 };
+
+use super::config::Settings;
 
 pub struct PowerExt {
     ll: Mutex<CriticalSectionRawMutex, Tps55289<I2cBusDevice, I2cError>>,
@@ -16,11 +19,14 @@ pub struct PowerExt {
     record: &'static Record,
 }
 
+const FEEDBACK: IntFB = IntFB::Ratio0_0564;
+
 impl PowerExt {
     pub async fn init(
         mut bsp: bsp::PowerExt,
         usbpd: &'static USBPD,
         record: &'static Record,
+        config: &'static Config,
         spawner: &SendSpawner,
     ) -> &'static Self {
         let ll = Mutex::new(Tps55289::new(bsp.i2c));
@@ -32,32 +38,44 @@ impl PowerExt {
         static SYSTEM: StaticCell<PowerExt> = StaticCell::new();
         let system = SYSTEM.init(Self { ll, usbpd, record });
 
-        let ratio = IntFB::Ratio0_0564;
-        let vref = VRef::from_feedback(Millivolts(9000), ratio);
-
         {
             let mut ll = system.ll.lock().await;
 
-            const CURRENT_SENSE_MILLIOHM: u32 = 20;
-            let limit_ma = 500;
-            let limit_uv = limit_ma * CURRENT_SENSE_MILLIOHM;
-            let limit_value = (limit_uv / 500) as u8;
-
-            ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
-            ll.vout_fs().modify_async(|w| w.intfb(ratio)).await.unwrap();
-            ll.iout_limit()
-                .modify_async(|w| w.setting(limit_value))
-                .await
-                .unwrap();
             ll.mode()
                 .modify_async(|w| w.dischg(false).oe(false))
                 .await
                 .unwrap();
+            ll.vout_fs()
+                .modify_async(|w| w.intfb(FEEDBACK))
+                .await
+                .unwrap();
         }
 
-        spawner.must_spawn(task(bsp.nint_pin, system));
+        system.persist(config.fetch().await).await;
+
+        spawner.must_spawn(monitor_task(bsp.nint_pin, system));
+        spawner.must_spawn(config_task(config, system));
 
         system
+    }
+
+    /// Persist configuration settings.
+    async fn persist(&self, settings: Settings) {
+        let vref = VRef::from_feedback(settings.vout_mv, FEEDBACK);
+
+        const CURRENT_SENSE_MILLIOHM: u32 = 20;
+        let limit_uv = settings.iout_ma.0 as u32 * CURRENT_SENSE_MILLIOHM;
+        let limit_value = (limit_uv / 500) as u8;
+
+        // TODO check with internal settings to prevent too many I2C transations.
+        let mut ll = self.ll.lock().await;
+        ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
+        ll.iout_limit()
+            .modify_async(|w| w.setting(limit_value))
+            .await
+            .unwrap();
+
+        log::info!("Persisted {:?} {:?}", settings.vout_mv, settings.iout_ma);
     }
 }
 
@@ -80,7 +98,17 @@ fn earliest_deadline(iter: impl Iterator<Item = Option<Instant>>) -> Option<Inst
 }
 
 #[embassy_executor::task]
-async fn task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
+async fn config_task(config: &'static Config, system: &'static PowerExt) {
+    let mut subscriber = config.subscriber();
+    loop {
+        if let WaitResult::Message(settings) = subscriber.next_message().await {
+            system.persist(settings).await;
+        }
+    }
+}
+
+#[embassy_executor::task]
+async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static PowerExt) {
     let mut enabled = false;
     let mut backoff_until = None;
     let mut stabilized_at = None;

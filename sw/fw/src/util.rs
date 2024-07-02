@@ -3,7 +3,7 @@ use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex,
     pubsub::{PubSubChannel, Subscriber},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub mod statsbuffer;
 
@@ -24,7 +24,7 @@ impl Debug for Nanovolts {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(PartialEq, Serialize, Deserialize, Default, Clone, Copy)]
 pub struct Millivolts(pub u16);
 
 impl Debug for Millivolts {
@@ -36,5 +36,14 @@ impl Debug for Millivolts {
 impl From<Nanovolts> for Millivolts {
     fn from(value: Nanovolts) -> Self {
         Millivolts((value.0 / 1_000_000) as u16)
+    }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Default, Clone, Copy)]
+pub struct Milliamps(pub u16);
+
+impl Debug for Milliamps {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("{}mA", self.0))
     }
 }

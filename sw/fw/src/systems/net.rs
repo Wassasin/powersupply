@@ -47,6 +47,7 @@ pub enum Error {
 pub enum Topic {
     Stats,
     Record,
+    Config,
 }
 
 impl Topic {
@@ -54,6 +55,7 @@ impl Topic {
         match self {
             Topic::Stats => String::try_from("slakkotron/stats").map_err(|_| ()),
             Topic::Record => String::try_from("slakkotron/record").map_err(|_| ()),
+            Topic::Config => String::try_from("slakkotron/config").map_err(|_| ()),
         }
     }
 }

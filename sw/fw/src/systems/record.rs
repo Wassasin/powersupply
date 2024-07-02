@@ -44,7 +44,7 @@ impl Record {
     pub async fn init(storage: &'static Storage, spawner: &Spawner) -> &'static Self {
         let data = storage.fetch::<Data>().await.unwrap().unwrap_or_default();
 
-        let statistics = Record {
+        let system = Record {
             inner: Mutex::new(Inner {
                 data,
                 sync_at: None,
@@ -55,7 +55,7 @@ impl Record {
         };
 
         static SYSTEM: StaticCell<Record> = StaticCell::new();
-        let system = SYSTEM.init(statistics);
+        let system = SYSTEM.init(system);
 
         spawner.must_spawn(sync_task(system));
         spawner.must_spawn(push_task(system));

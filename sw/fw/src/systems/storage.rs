@@ -29,6 +29,7 @@ struct Marker;
 pub enum StorageKey {
     Marker = 0x01,
     RecordData = 0x02,
+    ConfigSettings = 0x03,
 }
 
 pub trait StorageEntry: Serialize + for<'a> Deserialize<'a> {
