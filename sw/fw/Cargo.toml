@@ -49,8 +49,8 @@ nb = "1.1"
 embedded-hal = "1.0"
 embedded-hal-async = "1.0"
 embedded-io = "0.6"
-device-driver = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
-device-driver-macros = { git = "https://github.com/diondokter/device-driver.git", commit = "8bcff1f" }
+device-driver = { git = "https://github.com/diondokter/device-driver.git" }
+device-driver-macros = { git = "https://github.com/diondokter/device-driver.git" }
 
 bitfield = "0.15"
 bitvec = { version = "1.0", default-features = false }
