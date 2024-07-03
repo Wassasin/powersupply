@@ -22,9 +22,8 @@ const NVM_DATA: [[u8; 8]; 5] = [
 
 impl USBPD {
     pub async fn init(mut bsp: bsp::USBPD, spawner: &Spawner) -> &'static Self {
-        Timer::after(Duration::from_millis(30)).await;
+        // Note: do not reset the chip, because it de-asserts the power supply, which we need to communicate to the chip.
         bsp.reset_pin.set_low();
-        Timer::after(Duration::from_millis(500)).await;
         let hl = STUSB4500::new(bsp.i2c).await.unwrap();
         let mut nvm = hl.unlock_nvm().await.unwrap();
 

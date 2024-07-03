@@ -193,7 +193,7 @@ impl Bsp {
         };
 
         let usb_pd = USBPD {
-            reset_pin: Output::new(io.pins.gpio7, Level::High),
+            reset_pin: Output::new(io.pins.gpio7, Level::Low),
             int_pin: Input::new(io.pins.gpio21, Pull::None),
             i2c: I2cBusDevice::new(i2c_bus),
         };
