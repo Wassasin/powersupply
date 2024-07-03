@@ -44,7 +44,7 @@ impl StorageEntry for Marker {
 
 impl sequential_storage::map::Key for StorageKey {
     fn serialize_into(&self, buffer: &mut [u8]) -> Result<usize, SerializationError> {
-        if buffer.len() < 1 {
+        if buffer.is_empty() {
             return Err(SerializationError::BufferTooSmall);
         }
 
@@ -54,8 +54,7 @@ impl sequential_storage::map::Key for StorageKey {
     }
 
     fn deserialize_from(buffer: &[u8]) -> Result<(Self, usize), SerializationError> {
-        if buffer.len() < 1 {
-            log::error!("{:?}", buffer);
+        if buffer.is_empty() {
             return Err(SerializationError::InvalidFormat);
         }
 
@@ -85,6 +84,7 @@ impl<'a, T: StorageEntry> sequential_storage::map::Value<'a> for Wrapper<T> {
 }
 
 #[derive(From, Debug)]
+#[allow(unused)]
 pub enum Error {
     Serialization(SerializationError),
     Flash(sequential_storage::Error<FlashStorageError>),

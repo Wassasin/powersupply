@@ -38,7 +38,7 @@ async fn main(spawner: Spawner) {
     let bsp = Bsp::init(Peripherals::take());
 
     // Do USB-PD first thing, because the protocol demands it.
-    let usb_pd = systems::usb_pd::USBPD::init(bsp.usb_pd, &spawner).await;
+    let usb_pd = systems::usb_pd::Usbpd::init(bsp.usb_pd, &spawner).await;
 
     let storage = systems::storage::Storage::init().await;
     let config = systems::config::Config::init(storage, &spawner).await;

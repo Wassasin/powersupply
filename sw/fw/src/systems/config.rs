@@ -5,7 +5,7 @@ use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, pubsub::PubSubBehavior,
 };
-use embassy_time::{Duration, Instant, Timer};
+use embassy_time::{Duration, Timer};
 use serde::{Deserialize, Serialize};
 use static_cell::StaticCell;
 
@@ -55,7 +55,6 @@ impl StorageEntry for Settings {
 
 struct Inner {
     settings: Settings,
-    sync_at: Option<Instant>,
 }
 
 pub struct Config {
@@ -73,10 +72,7 @@ impl Config {
             .unwrap_or_default();
 
         let system = Config {
-            inner: Mutex::new(Inner {
-                settings: data,
-                sync_at: None,
-            }),
+            inner: Mutex::new(Inner { settings: data }),
             storage,
             notifier: PubSub::new(),
         };

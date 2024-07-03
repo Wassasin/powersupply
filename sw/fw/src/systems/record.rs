@@ -20,7 +20,7 @@ const PUSH_PERIOD: Duration = Duration::from_secs(10);
 
 type NotifyChannel = Channel<CriticalSectionRawMutex, (), 1>;
 
-#[derive(PartialEq, Debug, Serialize, Deserialize, Default, Clone, Copy)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Data {
     pub overcurrent_count: u64,
     pub overcurrent_secs: u64,
@@ -73,7 +73,7 @@ impl Record {
     }
 
     async fn schedule_sync(&self, inner: &mut Inner) {
-        self.data_notifier.publish_immediate(inner.data);
+        self.data_notifier.publish_immediate(inner.data.clone());
 
         if inner.sync_at.is_none() {
             inner.sync_at = Some(Instant::now() + SYNC_PERIOD);
@@ -84,7 +84,7 @@ impl Record {
     /// Publish the current record to all participants, immediately.
     pub async fn publish_immediate(&self) {
         let guard = self.inner.lock().await;
-        self.data_notifier.publish_immediate(guard.data);
+        self.data_notifier.publish_immediate(guard.data.clone());
     }
 
     pub fn subscriber(&'static self) -> Sub<Data> {

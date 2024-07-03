@@ -40,6 +40,7 @@ impl Stats {
         stats
     }
 
+    #[allow(unused)]
     pub async fn latest_data(&self) -> Option<Data> {
         self.data.lock().await.clone()
     }

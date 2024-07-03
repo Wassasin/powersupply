@@ -31,6 +31,7 @@ async fn net_task(record: &'static Record, config: &'static Config, net: &'stati
     loop {
         use embassy_sync::pubsub::WaitResult;
 
+        #[allow(clippy::single_match)]
         match subscriber.next_message().await {
             WaitResult::Message(event) => {
                 log::info!("Net {:#?}", event);

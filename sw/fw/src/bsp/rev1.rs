@@ -73,7 +73,7 @@ pub struct PowerExt {
 pub type USBPDResetPin = Output<'static, GpioPin<7>>;
 pub type USBPDIntPin = Input<'static, GpioPin<21>>;
 
-pub struct USBPD {
+pub struct Usbpd {
     pub reset_pin: USBPDResetPin,
     pub int_pin: USBPDIntPin,
     pub i2c: I2cBusDevice,
@@ -92,7 +92,7 @@ pub struct Bsp {
     pub wifi: Wifi,
     pub stats: Stats,
     pub power_ext: PowerExt,
-    pub usb_pd: USBPD,
+    pub usb_pd: Usbpd,
 
     pub high_prio_spawner: SendSpawner,
 }
@@ -121,7 +121,7 @@ impl Bsp {
                 systimer,
                 rng,
                 peripherals.RADIO_CLK,
-                &clocks,
+                clocks,
             )
             .unwrap();
 
@@ -137,8 +137,8 @@ impl Bsp {
 
         // Initialize embassy
         {
-            let timg0 = TimerGroup::new_async(peripherals.TIMG0, &clocks);
-            esp_hal_embassy::init(&clocks, timg0);
+            let timg0 = TimerGroup::new_async(peripherals.TIMG0, clocks);
+            esp_hal_embassy::init(clocks, timg0);
         }
 
         // I2C generic bus
@@ -148,7 +148,7 @@ impl Bsp {
                 io.pins.gpio5,
                 io.pins.gpio4,
                 400u32.kHz(),
-                &clocks,
+                clocks,
                 Some(40),
             );
 
@@ -192,13 +192,13 @@ impl Bsp {
             nint_pin: Input::new(io.pins.gpio20, Pull::None),
         };
 
-        let usb_pd = USBPD {
+        let usb_pd = Usbpd {
             reset_pin: Output::new(io.pins.gpio7, Level::Low),
             int_pin: Input::new(io.pins.gpio21, Pull::None),
             i2c: I2cBusDevice::new(i2c_bus),
         };
 
-        let mut delay = Delay::new(&clocks);
+        let mut delay = Delay::new(clocks);
 
         static EXECUTOR: StaticCell<InterruptExecutor<2>> = StaticCell::new();
         let executor =

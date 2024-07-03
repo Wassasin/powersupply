@@ -17,10 +17,10 @@ pub enum IntFB {
 impl IntFB {
     pub fn multiply(&self, x: u32) -> u32 {
         let ratio = match self {
-            IntFB::Ratio0_2256 => 2256,
-            IntFB::Ratio0_1128 => 1128,
-            IntFB::Ratio0_0752 => 0752,
-            IntFB::Ratio0_0564 => 0564,
+            IntFB::Ratio0_2256 => 2_256,
+            IntFB::Ratio0_1128 => 1_128,
+            IntFB::Ratio0_0752 => 752,
+            IntFB::Ratio0_0564 => 564,
         };
         x.checked_mul(ratio).unwrap() / 10_000
     }
@@ -38,7 +38,7 @@ pub enum OperatingStatus {
 pub struct VRef(u16);
 
 impl VRef {
-    pub fn into_nanovolts(&self) -> Nanovolts {
+    pub fn into_nanovolts(self) -> Nanovolts {
         Nanovolts(45_000_000 + 564_500 * self.0 as u32)
     }
 

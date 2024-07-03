@@ -33,7 +33,7 @@ where
         buf[1..data.len() + 1].copy_from_slice(data);
         let buf = &buf[0..data.len() + 1];
 
-        self.i2c.write(ADDRESS, &buf).await
+        self.i2c.write(ADDRESS, buf).await
     }
 
     async fn read_register<R, const SIZE_BYTES: usize>(

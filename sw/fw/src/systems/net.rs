@@ -126,6 +126,7 @@ impl Net {
 
     async fn process_message(&self, topic: &str, buf: &[u8]) {
         if let Ok(topic) = Topic::try_parse(topic) {
+            #[allow(clippy::single_match)]
             match topic {
                 Topic::Config => {
                     if let Ok((new_settings, _)) =
@@ -178,7 +179,7 @@ async fn net_task(
     system.event_channel.publish_immediate(Event::ConnectedWifi);
 
     loop {
-        let mut socket = TcpSocket::new(&stack, &mut rx_buffer, &mut tx_buffer);
+        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
 
         socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
@@ -260,13 +261,10 @@ async fn connection_task(mut controller: WifiController<'static>) {
     log::info!("start connection task");
     log::info!("Device capabilities: {:?}", controller.get_capabilities());
     loop {
-        match esp_wifi::wifi::get_wifi_state() {
-            WifiState::StaConnected => {
-                // wait until we're no longer connected
-                controller.wait_for_event(WifiEvent::StaDisconnected).await;
-                Timer::after(Duration::from_millis(1000)).await
-            }
-            _ => {}
+        if let WifiState::StaConnected = esp_wifi::wifi::get_wifi_state() {
+            // wait until we're no longer connected
+            controller.wait_for_event(WifiEvent::StaDisconnected).await;
+            Timer::after(Duration::from_millis(1000)).await
         }
         if !matches!(controller.is_started(), Ok(true)) {
             let client_config = Configuration::Client(ClientConfiguration {

@@ -11,7 +11,7 @@ use static_cell::StaticCell;
 use crate::{
     bsp::{self, I2cBusDevice, I2cError},
     drivers::tps55289::{ll::Tps55289, IntFB, VRef},
-    systems::{config::Config, record::Record, usb_pd::USBPD},
+    systems::{config::Config, record::Record, usb_pd::Usbpd},
 };
 
 use super::config::Settings;
@@ -27,12 +27,13 @@ pub enum State {
 
 struct Inner {
     ll: Tps55289<I2cBusDevice, I2cError>,
+    backoff_duration: Duration,
     state: State,
 }
 
 pub struct PowerExt {
     inner: Mutex<CriticalSectionRawMutex, Inner>,
-    usbpd: &'static USBPD,
+    usbpd: &'static Usbpd,
     record: &'static Record,
 }
 
@@ -41,7 +42,7 @@ const FEEDBACK: IntFB = IntFB::Ratio0_0564;
 impl PowerExt {
     pub async fn init(
         mut bsp: bsp::PowerExt,
-        usbpd: &'static USBPD,
+        usbpd: &'static Usbpd,
         record: &'static Record,
         config: &'static Config,
         spawner: &SendSpawner,
@@ -64,6 +65,7 @@ impl PowerExt {
         let system = SYSTEM.init(Self {
             inner: Mutex::new(Inner {
                 ll,
+                backoff_duration: Duration::default(), // placeholder value until persist
                 state: State::Disabled,
             }),
             usbpd,
@@ -88,6 +90,8 @@ impl PowerExt {
 
         let mut guard = self.inner.lock().await;
 
+        guard.backoff_duration = Duration::from_millis(settings.backoff_ms as u64);
+
         // TODO check with internal settings to prevent too many I2C transations.
         let ll = &mut guard.ll;
         ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
@@ -108,15 +112,13 @@ impl PowerExt {
 fn earliest_deadline(iter: impl Iterator<Item = Option<Instant>>) -> Option<Instant> {
     let mut res = None;
 
-    for d in iter {
-        if let Some(d) = d {
-            if let Some(res) = res.as_mut() {
-                if *res > d {
-                    *res = d;
-                }
-            } else {
-                res = Some(d);
+    for d in iter.flatten() {
+        if let Some(res) = res.as_mut() {
+            if *res > d {
+                *res = d;
             }
+        } else {
+            res = Some(d);
         }
     }
 
@@ -140,7 +142,6 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
     let mut stabilized_at = None;
     let mut ocp_since = None;
 
-    const BACKOFF_DURATION: Duration = Duration::from_millis(1000);
     const STABILIZATION_DURATION: Duration = Duration::from_millis(100);
     const MAX_DURATION: Duration = Duration::from_secs(5);
 
@@ -163,7 +164,7 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
                     .unwrap();
 
                 enabled = false;
-                backoff_until = Some(Instant::now() + BACKOFF_DURATION);
+                backoff_until = Some(Instant::now() + inner.backoff_duration);
                 stabilized_at = None;
 
                 if ocp_since.is_none() {

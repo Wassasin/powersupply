@@ -14,7 +14,7 @@ pub fn init_logger_from_env() {
     const LEVEL: Option<&'static str> = option_env!("PSU_LOGLEVEL");
 
     if let Some(lvl) = LEVEL {
-        let level = LevelFilter::from_str(lvl).unwrap_or_else(|_| LevelFilter::Off);
+        let level = LevelFilter::from_str(lvl).unwrap_or(LevelFilter::Off);
         unsafe { log::set_max_level_racy(level) };
     } else {
         unsafe { log::set_max_level_racy(LevelFilter::Info) };
@@ -32,11 +32,7 @@ impl log::Log for EspLogger {
     fn log(&self, record: &log::Record) {
         // check enabled log targets if any
         if let Some(targets) = LOG_TARGETS {
-            if targets
-                .split(",")
-                .find(|v| record.target().starts_with(v))
-                .is_none()
-            {
+            if !targets.split(',').any(|v| record.target().starts_with(v)) {
                 return;
             }
         }

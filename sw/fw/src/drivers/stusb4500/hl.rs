@@ -218,7 +218,11 @@ impl<I2C: I2c<Error = E>, E> STUSB4500Nvm<I2C, E> {
             sector.write(self.read_sector(i as u8).await?);
         }
 
-        Ok(unsafe { core::mem::transmute(res) })
+        Ok(unsafe {
+            core::mem::transmute::<[MaybeUninit<NVMSector>; NUM_SECTORS], [NVMSector; NUM_SECTORS]>(
+                res,
+            )
+        })
     }
 
     pub async fn write_sectors(&mut self, buf: &NVMSectors) -> Result<(), Error<E>> {

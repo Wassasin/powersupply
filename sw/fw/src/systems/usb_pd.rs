@@ -10,7 +10,7 @@ use crate::{
     drivers::stusb4500::{hl::STUSB4500, FixedPdo},
 };
 
-pub struct USBPD {
+pub struct Usbpd {
     hl: Mutex<CriticalSectionRawMutex, STUSB4500<I2cBusDevice, I2cError>>,
 }
 
@@ -22,8 +22,8 @@ const NVM_DATA: [[u8; 8]; 5] = [
     [0x00, 0x4B, 0x90, 0x21, 0x43, 0x00, 0x40, 0xFB],
 ];
 
-impl USBPD {
-    pub async fn init(mut bsp: bsp::USBPD, spawner: &Spawner) -> &'static Self {
+impl Usbpd {
+    pub async fn init(mut bsp: bsp::Usbpd, spawner: &Spawner) -> &'static Self {
         // Note: do not reset the chip, because it de-asserts the power supply, which we need to communicate to the chip.
         bsp.reset_pin.set_low();
         let hl = STUSB4500::new(bsp.i2c).await.unwrap();
@@ -49,7 +49,7 @@ impl USBPD {
 
         let hl = Mutex::new(hl);
 
-        static USBPD: StaticCell<USBPD> = StaticCell::new();
+        static USBPD: StaticCell<Usbpd> = StaticCell::new();
         let system = USBPD.init(Self { hl });
 
         spawner.must_spawn(state_task(system));
@@ -65,7 +65,7 @@ impl USBPD {
 }
 
 #[embassy_executor::task]
-async fn state_task(system: &'static USBPD) {
+async fn state_task(system: &'static Usbpd) {
     let mut prev_state = {
         let mut hl = system.hl.lock().await;
         hl.fsm_state().await.unwrap()

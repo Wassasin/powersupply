@@ -11,7 +11,7 @@ impl core::fmt::Display for SerialNumber {
         let mut buf = [0u8; 6 * 2];
 
         // Note(unwrap): could only fail if buffer was too small.
-        hex::encode_to_slice(&self.0, &mut buf).unwrap();
+        hex::encode_to_slice(self.0, &mut buf).unwrap();
 
         f.write_str(core::str::from_utf8(&buf).unwrap())
     }
