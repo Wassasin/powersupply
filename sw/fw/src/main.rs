@@ -43,11 +43,8 @@ async fn main(spawner: Spawner) {
     let storage = systems::storage::Storage::init().await;
     let config = systems::config::Config::init(storage, &spawner).await;
     let record = systems::record::Record::init(storage, &spawner).await;
-    let stats = systems::stats::Stats::init(bsp.stats, &spawner);
 
-    let net = systems::net::Net::init(bsp.wifi, &spawner).await;
-
-    let _power_ext = systems::power_ext::PowerExt::init(
+    let power_ext = systems::power_ext::PowerExt::init(
         bsp.power_ext,
         usb_pd,
         record,
@@ -55,6 +52,10 @@ async fn main(spawner: Spawner) {
         &bsp.high_prio_spawner,
     )
     .await;
+
+    let stats = systems::stats::Stats::init(bsp.stats, power_ext, &spawner);
+
+    let net = systems::net::Net::init(bsp.wifi, &spawner).await;
 
     Events::init(stats, record, config, net, &spawner).await;
 }

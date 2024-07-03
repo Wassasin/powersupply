@@ -1,8 +1,11 @@
+//! Output power supply control.
+
 use embassy_executor::SendSpawner;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, pubsub::WaitResult,
 };
 use embassy_time::{Duration, Instant, Timer};
+use serde::Serialize;
 use static_cell::StaticCell;
 
 use crate::{
@@ -13,8 +16,22 @@ use crate::{
 
 use super::config::Settings;
 
+#[derive(Debug, PartialEq, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum State {
+    Disabled,
+    Enabled,
+    Enabling,
+    Ocp,
+}
+
+struct Inner {
+    ll: Tps55289<I2cBusDevice, I2cError>,
+    state: State,
+}
+
 pub struct PowerExt {
-    ll: Mutex<CriticalSectionRawMutex, Tps55289<I2cBusDevice, I2cError>>,
+    inner: Mutex<CriticalSectionRawMutex, Inner>,
     usbpd: &'static USBPD,
     record: &'static Record,
 }
@@ -29,27 +46,29 @@ impl PowerExt {
         config: &'static Config,
         spawner: &SendSpawner,
     ) -> &'static Self {
-        let ll = Mutex::new(Tps55289::new(bsp.i2c));
-
         bsp.enable_pin.set_high();
-
         Timer::after(Duration::from_millis(50)).await;
 
+        // Configure device in idle mode with correct feedback.
+        let mut ll = Tps55289::new(bsp.i2c);
+        ll.mode()
+            .modify_async(|w| w.dischg(true).oe(false))
+            .await
+            .unwrap();
+        ll.vout_fs()
+            .modify_async(|w| w.intfb(FEEDBACK))
+            .await
+            .unwrap();
+
         static SYSTEM: StaticCell<PowerExt> = StaticCell::new();
-        let system = SYSTEM.init(Self { ll, usbpd, record });
-
-        {
-            let mut ll = system.ll.lock().await;
-
-            ll.mode()
-                .modify_async(|w| w.dischg(false).oe(false))
-                .await
-                .unwrap();
-            ll.vout_fs()
-                .modify_async(|w| w.intfb(FEEDBACK))
-                .await
-                .unwrap();
-        }
+        let system = SYSTEM.init(Self {
+            inner: Mutex::new(Inner {
+                ll,
+                state: State::Disabled,
+            }),
+            usbpd,
+            record,
+        });
 
         system.persist(config.fetch().await).await;
 
@@ -67,8 +86,10 @@ impl PowerExt {
         let limit_uv = settings.iout_ma.0 as u32 * CURRENT_SENSE_MILLIOHM;
         let limit_value = (limit_uv / 500) as u8;
 
+        let mut guard = self.inner.lock().await;
+
         // TODO check with internal settings to prevent too many I2C transations.
-        let mut ll = self.ll.lock().await;
+        let ll = &mut guard.ll;
         ll.vref().write_async(|w| w.vref(vref)).await.unwrap();
         ll.iout_limit()
             .modify_async(|w| w.setting(limit_value))
@@ -76,6 +97,11 @@ impl PowerExt {
             .unwrap();
 
         log::info!("Persisted {:?} {:?}", settings.vout_mv, settings.iout_ma);
+    }
+
+    pub async fn state(&self) -> State {
+        let guard = self.inner.lock().await;
+        guard.state
     }
 }
 
@@ -120,26 +146,31 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
 
     loop {
         {
-            let mut ll = system.ll.lock().await;
-            let status = ll.status().read_async().await.unwrap();
+            let mut inner = system.inner.lock().await;
+            let status = inner.ll.status().read_async().await.unwrap();
 
-            log::info!("{:?}", status);
+            log::debug!("{:?}", status);
 
             if status.ocp() || status.scp() {
-                if enabled {
-                    log::error!("OCP!");
+                inner.state = State::Ocp;
+                log::error!("OCP!");
 
-                    ll.mode().modify_async(|w| w.oe(false)).await.unwrap();
-                    enabled = false;
-                    backoff_until = Some(Instant::now() + BACKOFF_DURATION);
-                    stabilized_at = None;
+                inner
+                    .ll
+                    .mode()
+                    .modify_async(|w| w.dischg(true).oe(false))
+                    .await
+                    .unwrap();
 
-                    if ocp_since.is_none() {
-                        ocp_since = Some(Instant::now());
-                    }
+                enabled = false;
+                backoff_until = Some(Instant::now() + BACKOFF_DURATION);
+                stabilized_at = None;
 
-                    system.usbpd.set_pin(false).await;
+                if ocp_since.is_none() {
+                    ocp_since = Some(Instant::now());
                 }
+
+                system.usbpd.set_pin(false).await;
             } else if !enabled {
                 let activate = if let Some(until) = backoff_until {
                     until < Instant::now()
@@ -148,9 +179,15 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
                 };
 
                 if activate {
+                    inner.state = State::Enabling;
                     log::info!("Enabling");
 
-                    ll.mode().modify_async(|w| w.oe(true)).await.unwrap();
+                    inner
+                        .ll
+                        .mode()
+                        .modify_async(|w| w.dischg(false).oe(true))
+                        .await
+                        .unwrap();
                     enabled = true;
                     backoff_until = None;
 
@@ -160,6 +197,7 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
                 }
             } else if let Some(at) = stabilized_at {
                 if at < Instant::now() {
+                    inner.state = State::Enabled;
                     log::info!("Stabilized");
                     stabilized_at = None;
 

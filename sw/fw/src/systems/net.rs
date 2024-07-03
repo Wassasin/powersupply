@@ -1,3 +1,5 @@
+//! Networking and MQTT client.
+
 use embassy_executor::Spawner;
 use embassy_net::{tcp::TcpSocket, Config, IpEndpoint, Ipv4Address, Stack, StackResources};
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel, pubsub::PubSubBehavior};
@@ -26,7 +28,7 @@ const PASSWORD: &str = env!("WIFI_PASSWORD");
 type MessageChannel<T> = Channel<NoopRawMutex, T, 1>;
 
 const TOPIC_SIZE: usize = 64;
-const CONTENT_SIZE: usize = 80;
+const CONTENT_SIZE: usize = 128;
 
 pub struct Message {
     topic: String<TOPIC_SIZE>,
@@ -181,6 +183,11 @@ async fn net_task(
 
         system.event_channel.publish_immediate(Event::ConnectedMQTT);
 
+        client
+            .subscribe_to_topic(&Topic::Config.to_str().unwrap())
+            .await
+            .unwrap();
+
         loop {
             let message = system.message_channel.receive().await;
             match client
@@ -212,7 +219,7 @@ async fn connection_task(mut controller: WifiController<'static>) {
             WifiState::StaConnected => {
                 // wait until we're no longer connected
                 controller.wait_for_event(WifiEvent::StaDisconnected).await;
-                Timer::after(Duration::from_millis(5000)).await
+                Timer::after(Duration::from_millis(1000)).await
             }
             _ => {}
         }

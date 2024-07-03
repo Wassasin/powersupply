@@ -1,3 +1,5 @@
+//! Persistent storage on flash.
+
 use core::ops::Range;
 
 use derive_more::From;

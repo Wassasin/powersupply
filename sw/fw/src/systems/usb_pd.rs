@@ -1,3 +1,5 @@
+//! Input high current and voltage power supply control.
+
 use embassy_executor::Spawner;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
@@ -55,6 +57,7 @@ impl USBPD {
         system
     }
 
+    /// Set output GPIO pin value. (connected to LED indicating a short)
     pub async fn set_pin(&self, level: bool) {
         let mut hl = self.hl.lock().await;
         hl.gpio_set_level(level).await.unwrap();

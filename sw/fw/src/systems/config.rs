@@ -1,3 +1,5 @@
+//! Device configuration, persistent storage, and propagate changes to them.
+
 use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, pubsub::PubSubBehavior,

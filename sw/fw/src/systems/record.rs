@@ -1,3 +1,5 @@
+//! Persistent device metrics.
+
 use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, mutex::Mutex,
