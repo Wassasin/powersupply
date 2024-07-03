@@ -9,7 +9,7 @@ use static_cell::StaticCell;
 
 use crate::{
     systems::storage::{Storage, StorageEntry, StorageKey},
-    util::{DataChannel, DataSubscriber},
+    util::{PubSub, Sub},
 };
 
 // Write records every once in a while to prevent flash wear.
@@ -37,7 +37,7 @@ pub struct Record {
     inner: Mutex<CriticalSectionRawMutex, Inner>,
     storage: &'static Storage,
     sync_notifier: NotifyChannel,
-    data_notifier: DataChannel<Data>,
+    data_notifier: PubSub<Data>,
 }
 
 impl Record {
@@ -51,7 +51,7 @@ impl Record {
             }),
             storage,
             sync_notifier: NotifyChannel::new(),
-            data_notifier: DataChannel::new(),
+            data_notifier: PubSub::new(),
         };
 
         static SYSTEM: StaticCell<Record> = StaticCell::new();
@@ -79,7 +79,13 @@ impl Record {
         }
     }
 
-    pub fn subscriber(&'static self) -> DataSubscriber<Data> {
+    /// Publish the current record to all participants, immediately.
+    pub async fn publish_immediate(&self) {
+        let guard = self.inner.lock().await;
+        self.data_notifier.publish_immediate(guard.data);
+    }
+
+    pub fn subscriber(&'static self) -> Sub<Data> {
         self.data_notifier.subscriber().unwrap()
     }
 }
@@ -108,17 +114,17 @@ async fn sync_task(system: &'static Record) {
 
 #[embassy_executor::task]
 async fn push_task(system: &'static Record) {
-    let mut subscriber = system.subscriber();
-
     loop {
-        // Send the data every so often to consumers.
+        // We listen to the data channel ourselves as well, to be notified when some other part of the process has made a publication.
+        // Send the data every so often to consumers, but restarting the timer after a publication.
+        // The subscriber is dropped every loop, such that we 'miss' our own message.
+        let mut subscriber = system.subscriber();
         match embassy_futures::select::select(subscriber.next_message(), Timer::after(PUSH_PERIOD))
             .await
         {
             embassy_futures::select::Either::First(_) => {}
             embassy_futures::select::Either::Second(_) => {
-                let guard = system.inner.lock().await;
-                system.data_notifier.publish_immediate(guard.data);
+                system.publish_immediate().await;
             }
         }
     }

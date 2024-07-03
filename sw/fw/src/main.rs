@@ -17,17 +17,11 @@ mod drivers;
 use embassy_executor::Spawner;
 use esp_backtrace as _;
 
-use esp_hal::{delay::Delay, peripherals::Peripherals, prelude::*, rtc_cntl::Rtc};
+use esp_hal::{peripherals::Peripherals, prelude::*};
 use esp_println::println;
+use systems::events::Events;
 
 use crate::{bsp::Bsp, serialnumber::SerialNumber};
-
-pub struct State {
-    spawner: Spawner,
-
-    rtc: Rtc<'static>,
-    delay: Delay,
-}
 
 #[main]
 async fn main(spawner: Spawner) {
@@ -62,42 +56,5 @@ async fn main(spawner: Spawner) {
     )
     .await;
 
-    let mut stats_subscriber = stats.subscriber();
-    let mut record_subscriber = record.subscriber();
-    let mut config_subscriber = config.subscriber();
-    loop {
-        use embassy_futures::select::Either3;
-        use embassy_sync::pubsub::WaitResult;
-
-        match embassy_futures::select::select3(
-            stats_subscriber.next_message(),
-            record_subscriber.next_message(),
-            config_subscriber.next_message(),
-        )
-        .await
-        {
-            Either3::First(WaitResult::Message(message)) => {
-                log::info!("Stats {:#?}", message);
-                net.send(
-                    systems::net::Message::new(&systems::net::Topic::Stats, &message).unwrap(),
-                )
-                .await;
-            }
-            Either3::Second(WaitResult::Message(message)) => {
-                log::info!("Record {:#?}", message);
-                net.send(
-                    systems::net::Message::new(&systems::net::Topic::Record, &message).unwrap(),
-                )
-                .await;
-            }
-            Either3::Third(WaitResult::Message(message)) => {
-                log::info!("Config {:#?}", message);
-                net.send(
-                    systems::net::Message::new(&systems::net::Topic::Config, &message).unwrap(),
-                )
-                .await;
-            }
-            _ => {}
-        }
-    }
+    Events::init(stats, record, config, net, &spawner).await;
 }

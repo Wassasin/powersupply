@@ -8,7 +8,7 @@ use static_cell::StaticCell;
 
 use crate::{
     systems::storage::{Storage, StorageEntry, StorageKey},
-    util::{DataChannel, DataSubscriber, Milliamps, Millivolts},
+    util::{Milliamps, Millivolts, PubSub, Sub},
 };
 
 const PUSH_PERIOD: Duration = Duration::from_secs(30);
@@ -42,7 +42,7 @@ struct Inner {
 pub struct Config {
     inner: Mutex<CriticalSectionRawMutex, Inner>,
     storage: &'static Storage,
-    notifier: DataChannel<Settings>,
+    notifier: PubSub<Settings>,
 }
 
 impl Config {
@@ -59,7 +59,7 @@ impl Config {
                 sync_at: None,
             }),
             storage,
-            notifier: DataChannel::new(),
+            notifier: PubSub::new(),
         };
 
         static SYSTEM: StaticCell<Config> = StaticCell::new();
@@ -88,7 +88,13 @@ impl Config {
         guard.settings
     }
 
-    pub fn subscriber(&'static self) -> DataSubscriber<Settings> {
+    /// Publish the current settings to all participants, immediately.
+    pub async fn publish_immediate(&self) {
+        let guard = self.inner.lock().await;
+        self.notifier.publish_immediate(guard.settings);
+    }
+
+    pub fn subscriber(&'static self) -> Sub<Settings> {
         self.notifier.subscriber().unwrap()
     }
 }

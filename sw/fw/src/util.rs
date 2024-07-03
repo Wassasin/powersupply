@@ -11,9 +11,8 @@ const DATA_CAP: usize = 1;
 const DATA_SUBS: usize = 4;
 const DATA_PUBS: usize = 1;
 
-pub type DataChannel<T> = PubSubChannel<CriticalSectionRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
-pub type DataSubscriber<T> =
-    Subscriber<'static, CriticalSectionRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
+pub type PubSub<T> = PubSubChannel<CriticalSectionRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
+pub type Sub<T> = Subscriber<'static, CriticalSectionRawMutex, T, DATA_CAP, DATA_SUBS, DATA_PUBS>;
 
 #[derive(Serialize, Clone)]
 pub struct Nanovolts(pub u32);

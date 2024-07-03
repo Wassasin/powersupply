@@ -6,7 +6,7 @@ use static_cell::StaticCell;
 
 use crate::{
     bsp,
-    util::{DataChannel, DataSubscriber, Millivolts},
+    util::{Millivolts, PubSub, Sub},
 };
 
 #[derive(Serialize, Clone, Debug)]
@@ -18,7 +18,7 @@ pub struct Data {
 
 pub struct Stats {
     data: Mutex<NoopRawMutex, Option<Data>>,
-    notifier: DataChannel<Data>,
+    notifier: PubSub<Data>,
 }
 
 impl Stats {
@@ -26,7 +26,7 @@ impl Stats {
         static STATS: StaticCell<Stats> = StaticCell::new();
         let stats = STATS.init(Stats {
             data: Mutex::new(None),
-            notifier: DataChannel::new(),
+            notifier: PubSub::new(),
         });
 
         spawner.spawn(task(bsp, stats)).unwrap();
@@ -38,7 +38,7 @@ impl Stats {
         self.data.lock().await.clone()
     }
 
-    pub fn subscriber(&'static self) -> DataSubscriber<Data> {
+    pub fn subscriber(&'static self) -> Sub<Data> {
         self.notifier.subscriber().unwrap()
     }
 }

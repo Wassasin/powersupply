@@ -1,6 +1,6 @@
 use embassy_executor::Spawner;
 use embassy_net::{tcp::TcpSocket, Config, IpEndpoint, Ipv4Address, Stack, StackResources};
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel};
+use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel, pubsub::PubSubBehavior};
 use embassy_time::{Duration, Timer};
 use esp_wifi::wifi::{
     ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
@@ -13,22 +13,17 @@ use rust_mqtt::{
     utils::rng_generator::CountingRng,
 };
 use serde::Serialize;
+use static_cell::StaticCell;
 
-use crate::bsp::Wifi;
+use crate::{
+    bsp::Wifi,
+    util::{PubSub, Sub},
+};
 
 const SSID: &str = env!("WIFI_SSID");
 const PASSWORD: &str = env!("WIFI_PASSWORD");
 
-macro_rules! mk_static {
-    ($t:path,$val:expr) => {{
-        static STATIC_CELL: static_cell::StaticCell<$t> = static_cell::StaticCell::new();
-        #[deny(unused_attributes)]
-        let x = STATIC_CELL.uninit().write(($val));
-        x
-    }};
-}
-
-type DataChannel<T> = Channel<NoopRawMutex, T, 1>;
+type MessageChannel<T> = Channel<NoopRawMutex, T, 1>;
 
 const TOPIC_SIZE: usize = 64;
 const CONTENT_SIZE: usize = 80;
@@ -36,6 +31,12 @@ const CONTENT_SIZE: usize = 80;
 pub struct Message {
     topic: String<TOPIC_SIZE>,
     content: Vec<u8, CONTENT_SIZE>,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Event {
+    ConnectedWifi,
+    ConnectedMQTT,
 }
 
 #[derive(Debug)]
@@ -74,49 +75,47 @@ impl Message {
 }
 
 pub struct Net {
-    channel: DataChannel<Message>,
+    message_channel: MessageChannel<Message>,
+    event_channel: PubSub<Event>,
 }
 
 impl Net {
     pub async fn init(wifi: Wifi, spawner: &Spawner) -> &'static Net {
         let config = Config::dhcpv4(Default::default());
 
-        // Init network stack
-        let stack = &*mk_static!(
-            Stack<WifiDevice<'_, WifiStaDevice>>,
-            Stack::new(
-                wifi.device,
-                config,
-                mk_static!(StackResources<3>, StackResources::<3>::new()),
-                wifi.seed
-            )
-        );
+        static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
+        let resources = RESOURCES.init(StackResources::<3>::new());
 
-        let net = &*mk_static!(
-            Net,
-            Net {
-                channel: DataChannel::new()
-            }
-        );
+        static STACK: StaticCell<Stack<WifiDevice<'_, WifiStaDevice>>> = StaticCell::new();
+        let stack = STACK.init(Stack::new(wifi.device, config, resources, wifi.seed));
+
+        static SYSTEM: StaticCell<Net> = StaticCell::new();
+        let system = SYSTEM.init(Net {
+            message_channel: MessageChannel::new(),
+            event_channel: PubSub::new(),
+        });
 
         spawner.spawn(connection_task(wifi.controller)).unwrap();
-        spawner.spawn(stack_task(&stack)).unwrap();
-        spawner
-            .spawn(net_task(&stack, &net.channel, wifi.seed))
-            .unwrap();
+        spawner.spawn(stack_task(stack)).unwrap();
+        spawner.spawn(net_task(stack, system, wifi.seed)).unwrap();
 
-        net
+        system
     }
 
     pub async fn send(&self, message: Message) {
-        self.channel.send(message).await
+        self.message_channel.send(message).await
+    }
+
+    pub fn event_subscriber(&'static self) -> Sub<Event> {
+        self.event_channel.subscriber().unwrap()
     }
 }
 
 #[embassy_executor::task]
 async fn net_task(
     stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
-    channel: &'static DataChannel<Message>,
+    system: &'static Net,
+
     seed: u64,
 ) {
     let mut rx_buffer = [0; 4096];
@@ -137,6 +136,8 @@ async fn net_task(
         }
         Timer::after(Duration::from_millis(50)).await;
     }
+
+    system.event_channel.publish_immediate(Event::ConnectedWifi);
 
     loop {
         let mut socket = TcpSocket::new(&stack, &mut rx_buffer, &mut tx_buffer);
@@ -178,8 +179,10 @@ async fn net_task(
         client.connect_to_broker().await.unwrap();
         log::info!("Connected");
 
+        system.event_channel.publish_immediate(Event::ConnectedMQTT);
+
         loop {
-            let message = channel.receive().await;
+            let message = system.message_channel.receive().await;
             match client
                 .send_message(
                     &message.topic,
