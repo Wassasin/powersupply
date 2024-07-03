@@ -11,10 +11,13 @@ use static_cell::StaticCell;
 use crate::{
     bsp::{self, I2cBusDevice, I2cError},
     drivers::tps55289::{ll::Tps55289, IntFB, VRef},
-    systems::{config::Config, record::Record, usb_pd::Usbpd},
+    systems::{
+        config::{Config, Settings},
+        record::Record,
+        usb_pd::Usbpd,
+        watchdog::{self, Watchdog, WatchdogTicket},
+    },
 };
-
-use super::config::Settings;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -35,6 +38,7 @@ pub struct PowerExt {
     inner: Mutex<CriticalSectionRawMutex, Inner>,
     usbpd: &'static Usbpd,
     record: &'static Record,
+    watchdog: WatchdogTicket,
 }
 
 const FEEDBACK: IntFB = IntFB::Ratio0_0564;
@@ -45,6 +49,7 @@ impl PowerExt {
         usbpd: &'static Usbpd,
         record: &'static Record,
         config: &'static Config,
+        watchdog: &'static Watchdog,
         spawner: &SendSpawner,
     ) -> &'static Self {
         bsp.enable_pin.set_high();
@@ -70,6 +75,7 @@ impl PowerExt {
             }),
             usbpd,
             record,
+            watchdog: watchdog.ticket().await,
         });
 
         system.persist(config.fetch().await).await;
@@ -143,12 +149,14 @@ async fn monitor_task(mut nint_pin: bsp::PowerExtNIntPin, system: &'static Power
     let mut ocp_since = None;
 
     const STABILIZATION_DURATION: Duration = Duration::from_millis(100);
-    const MAX_DURATION: Duration = Duration::from_secs(5);
+    const MAX_DURATION: Duration = watchdog::WATCHDOG_DEADLINE;
 
     loop {
         {
             let mut inner = system.inner.lock().await;
             let status = inner.ll.status().read_async().await.unwrap();
+
+            system.watchdog.feed().await;
 
             log::debug!("{:?}", status);
 

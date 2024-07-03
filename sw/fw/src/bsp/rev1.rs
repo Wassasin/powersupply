@@ -15,13 +15,16 @@ use esp_hal::{
     i2c::I2C,
     i2s::{DataFormat, I2s, Standard},
     ledc::{timer::Timer, LSGlobalClkSource, Ledc, LowSpeed},
-    peripherals::{Peripherals, ADC1, I2C0},
+    peripherals::{Peripherals, ADC1, I2C0, TIMG1},
     prelude::*,
     rmt::Rmt,
     rng::Rng,
     rtc_cntl::Rtc,
     system::SystemControl,
-    timer::{systimer::SystemTimer, timg::TimerGroup},
+    timer::{
+        systimer::SystemTimer,
+        timg::{TimerGroup, Wdt},
+    },
     Async, Blocking,
 };
 use esp_hal_embassy::InterruptExecutor;
@@ -79,8 +82,8 @@ pub struct Usbpd {
     pub i2c: I2cBusDevice,
 }
 
-pub struct Storage {
-    flash: FlashStorage,
+pub struct Watchdog {
+    pub peri: Wdt<TIMG1, Async>,
 }
 
 pub struct Bsp {
@@ -93,6 +96,7 @@ pub struct Bsp {
     pub stats: Stats,
     pub power_ext: PowerExt,
     pub usb_pd: Usbpd,
+    pub watchdog: Watchdog,
 
     pub high_prio_spawner: SendSpawner,
 }
@@ -198,6 +202,11 @@ impl Bsp {
             i2c: I2cBusDevice::new(i2c_bus),
         };
 
+        let watchdog = {
+            let timg1 = TimerGroup::new_async(peripherals.TIMG1, clocks);
+            Watchdog { peri: timg1.wdt }
+        };
+
         let mut delay = Delay::new(clocks);
 
         static EXECUTOR: StaticCell<InterruptExecutor<2>> = StaticCell::new();
@@ -218,6 +227,7 @@ impl Bsp {
             stats,
             power_ext,
             usb_pd,
+            watchdog,
             high_prio_spawner,
         }
     }

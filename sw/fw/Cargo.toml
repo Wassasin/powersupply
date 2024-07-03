@@ -23,13 +23,10 @@ esp-backtrace = { version = "0.12", features = [
     "println",
 ] }
 
-esp32c3 = { version = "0.23" }
 esp-println = { version = "0.9", default-features = false, features = ["esp32c3", "log", "jtag-serial"] }
 esp-wifi = { version = "0.6", default-features = false, features = ["esp32c3", "log", "async", "embassy-net", "wifi", "wifi-default", "utils"] }
 embedded-io-async   = "0.6"
 esp-storage = { version = "0.3", features = ["esp32c3", "nor-flash"] }
-embedded-storage = "0.3"
-embedded-storage-async = "0.4"
 esp-partition-table = { version = "0.1", features = ["md5"] }
 sequential-storage = "2.0"
 
@@ -37,17 +34,13 @@ static_cell = "2.1"
 derive_more = "0.99"
 derive_builder = { version = "0.20", default-features = false }
 
-libm = "0.2.8"
-
 log = "0.4"
 hex = { version = "0.4", default-features = false }
 
-futures = { version = "0.3", default-features = false, features = ["async-await"] }
 heapless = "0.8"
 
 # Device driver dependencies
 nb = "1.1"
-embedded-hal = "1.0"
 embedded-hal-async = "1.0"
 embedded-io = "0.6"
 device-driver = { git = "https://github.com/diondokter/device-driver.git" }
@@ -55,7 +48,6 @@ device-driver-macros = { git = "https://github.com/diondokter/device-driver.git"
 
 bitfield = "0.15"
 bitvec = { version = "1.0", default-features = false }
-funty = { version = "2.0", default-features = false }
 num_enum = { version = "0.7", default-features = false }
 
 # MQTT

@@ -19,7 +19,10 @@ use static_cell::StaticCell;
 
 use crate::{
     bsp::Wifi,
-    systems::config::{Config, SettingsBuilder},
+    systems::{
+        config::{Config, SettingsBuilder},
+        watchdog::{Watchdog, WatchdogTicket},
+    },
     util::{PubSub, Sub},
 };
 
@@ -48,6 +51,7 @@ pub enum Error {
     ContentTooLarge,
 }
 
+#[derive(Debug)]
 pub enum Topic {
     Stats,
     Record,
@@ -93,7 +97,12 @@ pub struct Net {
 }
 
 impl Net {
-    pub async fn init(wifi: Wifi, config: &'static Config, spawner: &Spawner) -> &'static Net {
+    pub async fn init(
+        wifi: Wifi,
+        config: &'static Config,
+        watchdog: &'static Watchdog,
+        spawner: &Spawner,
+    ) -> &'static Net {
         let netconfig = embassy_net::Config::dhcpv4(Default::default());
 
         static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
@@ -111,7 +120,9 @@ impl Net {
 
         spawner.spawn(connection_task(wifi.controller)).unwrap();
         spawner.spawn(stack_task(stack)).unwrap();
-        spawner.spawn(net_task(stack, system, wifi.seed)).unwrap();
+        spawner
+            .spawn(net_task(stack, system, wifi.seed, watchdog.ticket().await))
+            .unwrap();
 
         system
     }
@@ -126,6 +137,7 @@ impl Net {
 
     async fn process_message(&self, topic: &str, buf: &[u8]) {
         if let Ok(topic) = Topic::try_parse(topic) {
+            log::info!("Received from {:?}", topic);
             #[allow(clippy::single_match)]
             match topic {
                 Topic::Config => {
@@ -150,12 +162,38 @@ impl Net {
     }
 }
 
+/// Try to send a message with when receiving an unrelated packet, retry until we get an Ack.
+async fn send_message_qos1<'a>(
+    client: &mut MqttClient<'a, TcpSocket<'a>, 20, CountingRng>,
+    topic: &str,
+    content: &[u8],
+    retain: bool,
+) -> Result<(), ReasonCode> {
+    // TODO fix the MQTT client to not be lossy.
+
+    for _ in 0..5 {
+        match client
+            .send_message(topic, content, QualityOfService::QoS1, retain)
+            .await
+        {
+            Ok(()) => return Ok(()),
+            Err(ReasonCode::ImplementationSpecificError) => {
+                continue;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+    Err(ReasonCode::ImplementationSpecificError)
+}
+
 #[embassy_executor::task]
 async fn net_task(
     stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
     system: &'static Net,
-
     seed: u64,
+    watchdog_ticket: WatchdogTicket,
 ) {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
@@ -177,6 +215,7 @@ async fn net_task(
     }
 
     system.event_channel.publish_immediate(Event::ConnectedWifi);
+    watchdog_ticket.feed().await;
 
     loop {
         let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
@@ -226,29 +265,23 @@ async fn net_task(
             .unwrap();
 
         loop {
+            watchdog_ticket.feed().await;
+
             let outcoming_fut = system.outgoing_channel.receive();
             let incoming_fut = client.receive_message();
 
             match embassy_futures::select::select(outcoming_fut, incoming_fut).await {
                 embassy_futures::select::Either::First(message) => {
-                    match client
-                        .send_message(
-                            &message.topic,
-                            &message.content,
-                            QualityOfService::QoS1,
-                            false,
-                        )
-                        .await
+                    if let Err(e) =
+                        send_message_qos1(&mut client, &message.topic, &message.content, false)
+                            .await
                     {
-                        Ok(()) => {}
-                        Err(ReasonCode::NoMatchingSubscribers) => {}
-                        Err(e) => {
-                            log::error!("{:?}", e);
-                        }
+                        log::error!("{:?}", e);
                     }
                 }
                 embassy_futures::select::Either::Second(message) => match message {
                     Ok((topic, buf)) => system.process_message(topic, buf).await,
+                    Err(ReasonCode::ImplementationSpecificError) => {}
                     Err(e) => log::error!("{:?}", e),
                 },
             }
@@ -291,5 +324,5 @@ async fn connection_task(mut controller: WifiController<'static>) {
 
 #[embassy_executor::task]
 async fn stack_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
-    stack.run().await
+    stack.run().await;
 }

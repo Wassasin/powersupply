@@ -6,3 +6,4 @@ pub mod record;
 pub mod stats;
 pub mod storage;
 pub mod usb_pd;
+pub mod watchdog;

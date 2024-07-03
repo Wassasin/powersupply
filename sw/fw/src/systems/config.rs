@@ -88,14 +88,20 @@ impl Config {
     pub async fn update(&self, f: impl FnOnce(Settings) -> Settings) {
         {
             let mut guard = self.inner.lock().await;
+            let old_settings = guard.settings;
             guard.settings = f(guard.settings);
-            self.storage.store(guard.settings).await.unwrap();
 
-            let publisher = self.notifier.publisher().unwrap();
-            publisher.publish(guard.settings).await; // Await until all consumers had their fill.
+            if old_settings != guard.settings {
+                // Only persist and publish if it has changed.
+                self.storage.store(guard.settings).await.unwrap();
+                let publisher = self.notifier.publisher().unwrap();
+                publisher.publish(guard.settings).await; // Await until all consumers had their fill.
+
+                log::info!("Synced data");
+            } else {
+                log::debug!("Data has not changed");
+            }
         };
-
-        log::info!("Synced data");
     }
 
     pub async fn fetch(&self) -> Settings {
