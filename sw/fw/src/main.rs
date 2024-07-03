@@ -55,7 +55,7 @@ async fn main(spawner: Spawner) {
 
     let stats = systems::stats::Stats::init(bsp.stats, power_ext, &spawner);
 
-    let net = systems::net::Net::init(bsp.wifi, &spawner).await;
+    let net = systems::net::Net::init(bsp.wifi, config, &spawner).await;
 
     Events::init(stats, record, config, net, &spawner).await;
 }

@@ -1,7 +1,7 @@
 //! Networking and MQTT client.
 
 use embassy_executor::Spawner;
-use embassy_net::{tcp::TcpSocket, Config, IpEndpoint, Ipv4Address, Stack, StackResources};
+use embassy_net::{tcp::TcpSocket, IpEndpoint, Ipv4Address, Stack, StackResources};
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel, pubsub::PubSubBehavior};
 use embassy_time::{Duration, Timer};
 use esp_wifi::wifi::{
@@ -19,6 +19,7 @@ use static_cell::StaticCell;
 
 use crate::{
     bsp::Wifi,
+    systems::config::{Config, SettingsBuilder},
     util::{PubSub, Sub},
 };
 
@@ -61,6 +62,15 @@ impl Topic {
             Topic::Config => String::try_from("slakkotron/config").map_err(|_| ()),
         }
     }
+
+    pub fn try_parse(str: &str) -> Result<Topic, ()> {
+        // TODO do properly
+        if str == "slakkotron/config" {
+            Ok(Topic::Config)
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl Message {
@@ -77,24 +87,26 @@ impl Message {
 }
 
 pub struct Net {
-    message_channel: MessageChannel<Message>,
+    outgoing_channel: MessageChannel<Message>,
     event_channel: PubSub<Event>,
+    config: &'static Config,
 }
 
 impl Net {
-    pub async fn init(wifi: Wifi, spawner: &Spawner) -> &'static Net {
-        let config = Config::dhcpv4(Default::default());
+    pub async fn init(wifi: Wifi, config: &'static Config, spawner: &Spawner) -> &'static Net {
+        let netconfig = embassy_net::Config::dhcpv4(Default::default());
 
         static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
         let resources = RESOURCES.init(StackResources::<3>::new());
 
         static STACK: StaticCell<Stack<WifiDevice<'_, WifiStaDevice>>> = StaticCell::new();
-        let stack = STACK.init(Stack::new(wifi.device, config, resources, wifi.seed));
+        let stack = STACK.init(Stack::new(wifi.device, netconfig, resources, wifi.seed));
 
         static SYSTEM: StaticCell<Net> = StaticCell::new();
-        let system = SYSTEM.init(Net {
-            message_channel: MessageChannel::new(),
+        let system: &mut Net = SYSTEM.init(Net {
+            outgoing_channel: MessageChannel::new(),
             event_channel: PubSub::new(),
+            config,
         });
 
         spawner.spawn(connection_task(wifi.controller)).unwrap();
@@ -105,11 +117,35 @@ impl Net {
     }
 
     pub async fn send(&self, message: Message) {
-        self.message_channel.send(message).await
+        self.outgoing_channel.send(message).await
     }
 
     pub fn event_subscriber(&'static self) -> Sub<Event> {
         self.event_channel.subscriber().unwrap()
+    }
+
+    async fn process_message(&self, topic: &str, buf: &[u8]) {
+        if let Ok(topic) = Topic::try_parse(topic) {
+            match topic {
+                Topic::Config => {
+                    if let Ok((new_settings, _)) =
+                        serde_json_core::from_slice::<SettingsBuilder>(buf)
+                    {
+                        self.config
+                            .update(|mut settings| {
+                                settings.integrate(new_settings);
+                                settings
+                            })
+                            .await
+                    } else {
+                        log::warn!("Failed to parse settings");
+                    }
+                }
+                _ => {}
+            }
+        } else {
+            log::warn!("Received message from unknown topic \"{}\"", topic)
+        }
     }
 }
 
@@ -163,7 +199,7 @@ async fn net_task(
 
         config.add_max_subscribe_qos(QualityOfService::QoS1);
         config.add_client_id("slakkotron");
-        config.max_packet_size = 20;
+        config.max_packet_size = 256;
 
         let mut recv_buffer = [0; 256];
         let mut write_buffer = [0; 256];
@@ -189,22 +225,31 @@ async fn net_task(
             .unwrap();
 
         loop {
-            let message = system.message_channel.receive().await;
-            match client
-                .send_message(
-                    &message.topic,
-                    &message.content,
-                    QualityOfService::QoS1,
-                    false,
-                )
-                .await
-            {
-                Ok(()) => {}
-                Err(ReasonCode::NoMatchingSubscribers) => {}
-                Err(e) => {
-                    log::error!("{:?}", e);
-                    break;
+            let outcoming_fut = system.outgoing_channel.receive();
+            let incoming_fut = client.receive_message();
+
+            match embassy_futures::select::select(outcoming_fut, incoming_fut).await {
+                embassy_futures::select::Either::First(message) => {
+                    match client
+                        .send_message(
+                            &message.topic,
+                            &message.content,
+                            QualityOfService::QoS1,
+                            false,
+                        )
+                        .await
+                    {
+                        Ok(()) => {}
+                        Err(ReasonCode::NoMatchingSubscribers) => {}
+                        Err(e) => {
+                            log::error!("{:?}", e);
+                        }
+                    }
                 }
+                embassy_futures::select::Either::Second(message) => match message {
+                    Ok((topic, buf)) => system.process_message(topic, buf).await,
+                    Err(e) => log::error!("{:?}", e),
+                },
             }
         }
     }

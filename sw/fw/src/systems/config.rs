@@ -1,5 +1,6 @@
 //! Device configuration, persistent storage, and propagate changes to them.
 
+use derive_builder::Builder;
 use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, pubsub::PubSubBehavior,
@@ -15,7 +16,9 @@ use crate::{
 
 const PUSH_PERIOD: Duration = Duration::from_secs(30);
 
-#[derive(PartialEq, Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone, Copy, Builder)]
+#[builder(no_std, build_fn(error(validation_error = false)))]
+#[builder(derive(Deserialize))]
 pub struct Settings {
     pub vout_mv: Millivolts,
     pub iout_ma: Milliamps,
@@ -28,6 +31,20 @@ impl Default for Settings {
             vout_mv: Millivolts(9000),
             iout_ma: Milliamps(500),
             backoff_ms: 500,
+        }
+    }
+}
+
+impl Settings {
+    pub fn integrate(&mut self, value: SettingsBuilder) {
+        if let Some(vout_mv) = value.vout_mv {
+            self.vout_mv = vout_mv;
+        }
+        if let Some(iout_ma) = value.iout_ma {
+            self.iout_ma = iout_ma;
+        }
+        if let Some(backoff_ms) = value.backoff_ms {
+            self.backoff_ms = backoff_ms;
         }
     }
 }
