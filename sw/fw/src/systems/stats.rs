@@ -2,7 +2,7 @@
 
 use embassy_executor::Spawner;
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
-use embassy_time::{Duration, Instant, Timer};
+use embassy_time::{Duration, Instant, Ticker, Timer};
 use serde::Serialize;
 use static_cell::StaticCell;
 
@@ -76,6 +76,7 @@ fn factor_high(value: u16) -> Millivolts {
 #[embassy_executor::task]
 async fn task(mut bsp: bsp::Stats, power_ext: &'static PowerExt, system: &'static Stats) {
     let publisher = system.notifier.publisher().unwrap();
+    let mut ticker = Ticker::every(Duration::from_secs(1));
 
     loop {
         let vsupply = poll_until_ready(|| bsp.adc.read_oneshot(&mut bsp.pins.vsupply))
@@ -106,6 +107,6 @@ async fn task(mut bsp: bsp::Stats, power_ext: &'static PowerExt, system: &'stati
             log::warn!("Notifier queue full, stats messages are not picked up on time");
         }
 
-        Timer::after(Duration::from_millis(1000)).await;
+        ticker.next().await;
     }
 }

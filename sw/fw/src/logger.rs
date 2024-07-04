@@ -1,5 +1,6 @@
 use core::str::FromStr;
 
+use embassy_time::Instant;
 use log::LevelFilter;
 
 use super::println;
@@ -56,9 +57,16 @@ impl log::Log for EspLogger {
 
         let target = record.target();
 
+        let now = Instant::now();
+        let now_ms = now.as_millis();
+        let now_ms_sub = now_ms % 1000;
+        let now_s = now_ms / 1000;
+
         println!(
-            "{}[{}{}{}{} {}{}{}{}]{} {}",
+            "{}{:3}.{:03} [{}{}{}{} {}{}{}{}]{} {}",
             DIMMED,
+            now_s,
+            now_ms_sub,
             RESET,
             color,
             record.level(),
