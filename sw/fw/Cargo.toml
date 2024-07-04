@@ -38,6 +38,8 @@ log = "0.4"
 hex = { version = "0.4", default-features = false }
 
 heapless = "0.8"
+portable-atomic = "1.6"
+critical-section = "1.1"
 
 # Device driver dependencies
 nb = "1.1"

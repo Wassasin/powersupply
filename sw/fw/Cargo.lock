@@ -1436,6 +1436,7 @@ version = "0.1.0"
 dependencies = [
  "bitfield",
  "bitvec",
+ "critical-section",
  "derive_builder",
  "derive_more",
  "device-driver",
@@ -1461,6 +1462,7 @@ dependencies = [
  "log",
  "nb 1.1.0",
  "num_enum",
+ "portable-atomic",
  "postcard",
  "rust-mqtt",
  "sequential-storage",

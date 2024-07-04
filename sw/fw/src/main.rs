@@ -4,6 +4,7 @@
 #[allow(unused)]
 mod bsp;
 
+mod executor;
 mod logger;
 mod serialnumber;
 mod systems;
@@ -27,9 +28,23 @@ use systems::{
 
 use crate::{bsp::Bsp, serialnumber::SerialNumber};
 
-#[main]
-async fn main(spawner: Spawner) {
-    println!("=== SARIF Slakkotron main ===");
+#[doc(hidden)]
+unsafe fn __make_static<T>(t: &mut T) -> &'static mut T {
+    ::core::mem::transmute(t)
+}
+
+#[entry]
+fn main() -> ! {
+    let mut executor = executor::Executor::new();
+    let executor = unsafe { __make_static(&mut executor) };
+    executor.run(|spawner| {
+        spawner.must_spawn(app(spawner));
+    })
+}
+
+#[embassy_executor::task]
+async fn app(spawner: Spawner) {
+    println!("=== SARIF Slakkotron application ===");
     logger::init_logger_from_env();
 
     let reset_reason = esp_hal::reset::get_reset_reason();
