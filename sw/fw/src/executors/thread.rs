@@ -11,37 +11,38 @@ pub(crate) const THREAD_MODE_CONTEXT: u8 = 16;
 
 static SIGNAL_WORK_THREAD_MODE: [AtomicBool; 1] = [AtomicBool::new(false)];
 
-#[export_name = "__pender"]
-fn __pender(context: *mut ()) {
-    use esp_hal::system::SoftwareInterrupt;
-
-    let context = (context as usize).to_le_bytes();
-
-    match context[0] {
-        // For interrupt executors, the context value is the
-        // software interrupt number
-        0 => unsafe { SoftwareInterrupt::<0>::steal().raise() },
-        1 => unsafe { SoftwareInterrupt::<1>::steal().raise() },
-        2 => unsafe { SoftwareInterrupt::<2>::steal().raise() },
-        3 => unsafe { SoftwareInterrupt::<3>::steal().raise() },
-        other => {
-            assert_eq!(other, THREAD_MODE_CONTEXT);
-            // THREAD_MODE_CONTEXT id is reserved for thread mode executors
-            pend_thread_mode(context[1] as usize)
-        }
-    }
-}
-
 pub(crate) fn pend_thread_mode(core: usize) {
     // Signal that there is work to be done.
     SIGNAL_WORK_THREAD_MODE[core].store(true, Ordering::SeqCst);
+}
+
+static SLEEP_COUNT_FROM: AtomicU64 = AtomicU64::new(0);
+static SLEEP_TOTAL_TICKS: AtomicU64 = AtomicU64::new(0);
+
+pub struct SleepStats {
+    sleep: u64,
+    total: u64,
+}
+
+impl SleepStats {
+    pub fn current_restart() -> Self {
+        critical_section::with(|_| {
+            let sleep = SLEEP_TOTAL_TICKS.swap(0, Ordering::Relaxed);
+            let from = SLEEP_COUNT_FROM.swap(Instant::now().as_ticks(), Ordering::Relaxed);
+            let total = Instant::now().as_ticks() - from;
+            Self { sleep, total }
+        })
+    }
+
+    pub fn as_permille(&self) -> u64 {
+        self.sleep * 1000 / self.total
+    }
 }
 
 /// A thread aware Executor
 pub struct Executor {
     inner: raw::Executor,
     not_send: PhantomData<*mut ()>,
-    sleep_ticks: AtomicU64,
 }
 
 impl Executor {
@@ -55,7 +56,6 @@ impl Executor {
                 0,
             ]) as *mut ()),
             not_send: PhantomData,
-            sleep_ticks: AtomicU64::new(0),
         }
     }
 
@@ -106,11 +106,10 @@ impl Executor {
                 let start = Instant::now();
                 unsafe { core::arch::asm!("wfi") };
                 let duration = start.elapsed();
-                // duration.as_ticks()
+                SLEEP_TOTAL_TICKS.fetch_add(duration.as_ticks(), Ordering::Relaxed);
             }
         });
-        // if an interrupt occurred while waiting, it will be serviced
-        // here
+        // if an interrupt occurred while waiting, it will be serviced here
     }
 }
 

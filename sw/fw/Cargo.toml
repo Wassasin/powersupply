@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [workspace]
 
 [dependencies]
-embassy-executor    = { version = "0.5", features = ["task-arena-size-131072", "executor-thread"] }
+embassy-executor    = { version = "0.5", features = ["task-arena-size-131072"] }
 embassy-sync        = "0.5"
 embassy-time        = { version = "0.3", features = ["generic-queue-8"] }
 embassy-futures     = { version = "0.1" }
@@ -15,7 +15,7 @@ embassy-net         = { version = "0.4.0", features = [ "tcp", "udp", "dhcpv4", 
 embassy-embedded-hal = "0.1"
 
 esp-hal = { version = "0.18", features = ["esp32c3", "async"] }
-esp-hal-embassy = {version = "0.1", features = ["esp32c3", "time-timg0"] }
+esp-hal-embassy = { version = "0.1", default-features = false, features = ["esp32c3", "time-timg0"] }
 esp-backtrace = { version = "0.12", features = [
     "esp32c3",
     "panic-handler",
@@ -59,6 +59,11 @@ serde-json-core = "0.5"
 postcard = "1.0"
 
 [features]
+
+[patch.crates-io]
+esp-hal = { git = "https://github.com/esp-rs/esp-hal.git", rev = "c4ad9d3" }
+esp-hal-embassy = { git = "https://github.com/esp-rs/esp-hal.git", rev = "c4ad9d3" }
+esp-wifi = { git = "https://github.com/esp-rs/esp-hal.git", rev = "c4ad9d3" }
 
 [profile.dev.package.esp-wifi]
 opt-level = 3

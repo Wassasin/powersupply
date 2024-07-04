@@ -1,3 +1,5 @@
+use crate::executors::interrupt::InterruptExecutor;
+
 use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
 use embassy_executor::SendSpawner;
 use embassy_sync::{
@@ -27,7 +29,6 @@ use esp_hal::{
     },
     Async, Blocking,
 };
-use esp_hal_embassy::InterruptExecutor;
 use esp_storage::FlashStorage;
 use esp_wifi::wifi::{WifiController, WifiDevice, WifiStaDevice};
 use static_cell::StaticCell;

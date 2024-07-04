@@ -4,7 +4,7 @@
 #[allow(unused)]
 mod bsp;
 
-mod executor;
+mod executors;
 mod logger;
 mod serialnumber;
 mod systems;
@@ -35,7 +35,7 @@ unsafe fn __make_static<T>(t: &mut T) -> &'static mut T {
 
 #[entry]
 fn main() -> ! {
-    let mut executor = executor::Executor::new();
+    let mut executor = executors::thread::Executor::new();
     let executor = unsafe { __make_static(&mut executor) };
     executor.run(|spawner| {
         spawner.must_spawn(app(spawner));

@@ -19,6 +19,7 @@ pub struct Data {
     pub vprog_mv: Millivolts,
     pub vout_mv: Millivolts,
     pub uptime_secs: u64,
+    pub idle_permille: u64,
     pub vout_state: crate::systems::power_ext::State,
 }
 
@@ -98,6 +99,7 @@ async fn task(mut bsp: bsp::Stats, power_ext: &'static PowerExt, system: &'stati
             vprog_mv,
             vout_mv,
             uptime_secs: Instant::now().as_secs(),
+            idle_permille: crate::executors::thread::SleepStats::current_restart().as_permille(),
             vout_state: power_ext.state().await,
         };
 
