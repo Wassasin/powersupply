@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use embassy_time::Timer;
+use embassy_time::{Duration, TimeoutError, Timer};
 use embedded_hal_async::i2c::I2c;
 use embedded_io_async::{Read, Write};
 
@@ -25,6 +25,7 @@ pub enum Error<E> {
     IO,
     DeviceIDMismatch,
     InvalidValue,
+    Timeout,
 }
 
 impl<E> From<E> for Error<E> {
@@ -37,9 +38,21 @@ impl<I2C: I2c<Error = E>, E> STUSB4500<I2C, E> {
     pub async fn new(i2c: I2C) -> Result<Self, Error<E>> {
         let mut ll = ll::STUSB4500::new(i2c);
 
-        while ll.device_id().read_async().await?.value() != 0x25 {
-            // TODO timeout
-            Timer::after_millis(1).await
+        // Await device booting
+        let device_id = embassy_time::with_timeout(Duration::from_millis(100), async {
+            loop {
+                let res = ll.device_id().read_async().await;
+                if let Ok(reg) = res {
+                    return Ok::<_, Error<E>>(reg.value());
+                }
+                Timer::after_millis(1).await
+            }
+        })
+        .await
+        .map_err(|TimeoutError| Error::Timeout)??;
+
+        if device_id != 0x25 {
+            return Err(Error::DeviceIDMismatch);
         }
 
         Ok(Self { ll })

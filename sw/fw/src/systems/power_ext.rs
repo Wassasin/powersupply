@@ -55,6 +55,8 @@ impl PowerExt {
         bsp.enable_pin.set_high();
         Timer::after(Duration::from_millis(50)).await;
 
+        log::info!("Booting TPS55289");
+
         // Configure device in idle mode with correct feedback.
         let mut ll = Tps55289::new(bsp.i2c);
         ll.mode()

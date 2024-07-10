@@ -154,7 +154,7 @@ impl Bsp {
                 io.pins.gpio4,
                 400u32.kHz(),
                 clocks,
-                Some(40),
+                Some(20),
             );
 
             static I2C_BUS: StaticCell<I2cBus> = StaticCell::new();

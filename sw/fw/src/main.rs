@@ -65,20 +65,20 @@ async fn app(spawner: Spawner) {
     let config = systems::config::Config::init(storage, &spawner).await;
     let record = systems::record::Record::init(storage, &spawner).await;
 
-    let power_ext = systems::power_ext::PowerExt::init(
-        bsp.power_ext,
-        usb_pd,
-        record,
-        config,
-        watchdog,
-        &bsp.high_prio_spawner,
-    )
-    .await;
+    // let power_ext = systems::power_ext::PowerExt::init(
+    //     bsp.power_ext,
+    //     usb_pd,
+    //     record,
+    //     config,
+    //     watchdog,
+    //     &bsp.high_prio_spawner,
+    // )
+    // .await;
 
-    let stats = systems::stats::Stats::init(bsp.stats, power_ext, &spawner);
+    // let stats = systems::stats::Stats::init(bsp.stats, power_ext, &spawner);
     let net = systems::net::Net::init(bsp.wifi, config, watchdog, &spawner).await;
 
-    Events::init(stats, record, config, net, &spawner).await;
+    // Events::init(stats, record, config, net, &spawner).await;
 
     loop {
         watchdog_ticket.feed().await;

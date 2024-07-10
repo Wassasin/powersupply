@@ -26,7 +26,11 @@ impl Usbpd {
     pub async fn init(mut bsp: bsp::Usbpd, spawner: &Spawner) -> &'static Self {
         // Note: do not reset the chip, because it de-asserts the power supply, which we need to communicate to the chip.
         bsp.reset_pin.set_low();
-        let hl = STUSB4500::new(bsp.i2c).await.unwrap();
+        let res = STUSB4500::new(bsp.i2c).await;
+        if let Err(err) = res.as_ref() {
+            log::error!("{:?}", err);
+        }
+        let hl = res.unwrap();
         let mut nvm = hl.unlock_nvm().await.unwrap();
 
         let data = nvm.read_sectors().await.unwrap();
