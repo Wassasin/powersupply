@@ -33,6 +33,9 @@ type MessageChannel<T> = Channel<NoopRawMutex, T, 1>;
 
 const TOPIC_SIZE: usize = 64;
 const CONTENT_SIZE: usize = 128;
+const MAX_PACKET_SIZE: usize = 256;
+const SOCKET_BUFFER_SIZE: usize = 1024;
+const MAX_PROPERTIES: usize = 20;
 
 pub struct Message {
     topic: String<TOPIC_SIZE>,
@@ -164,7 +167,7 @@ impl Net {
 
 /// Try to send a message with when receiving an unrelated packet, retry until we get an Ack.
 async fn send_message_qos1<'a>(
-    client: &mut MqttClient<'a, TcpSocket<'a>, 20, CountingRng>,
+    client: &mut MqttClient<'a, TcpSocket<'a>, MAX_PROPERTIES, CountingRng>,
     topic: &str,
     content: &[u8],
     retain: bool,
@@ -188,74 +191,94 @@ async fn send_message_qos1<'a>(
     Err(ReasonCode::ImplementationSpecificError)
 }
 
-#[embassy_executor::task]
-async fn net_task(
+async fn mqtt_connected<'a>(
+    system: &'static Net,
+    watchdog_ticket: &WatchdogTicket,
+    client: &mut MqttClient<'a, TcpSocket<'a>, MAX_PROPERTIES, CountingRng>,
+) {
+    loop {
+        watchdog_ticket.feed().await;
+
+        let outcoming_fut = system.outgoing_channel.receive();
+        let incoming_fut = client.receive_message();
+
+        match embassy_futures::select::select(outcoming_fut, incoming_fut).await {
+            embassy_futures::select::Either::First(message) => {
+                if let Err(e) =
+                    send_message_qos1(client, &message.topic, &message.content, false).await
+                {
+                    log::error!("{:?}", e);
+                }
+            }
+            embassy_futures::select::Either::Second(message) => match message {
+                Ok((topic, buf)) => system.process_message(topic, buf).await,
+                Err(ReasonCode::ImplementationSpecificError) => {}
+                Err(ReasonCode::NetworkError) => {
+                    log::error!("Network error");
+                    return;
+                }
+                Err(e) => log::error!("{:?}", e),
+            },
+        }
+    }
+}
+
+async fn link_up(
     stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
     system: &'static Net,
     seed: u64,
-    watchdog_ticket: WatchdogTicket,
+    watchdog_ticket: &WatchdogTicket,
 ) {
-    let mut rx_buffer = [0; 4096];
-    let mut tx_buffer = [0; 4096];
-
-    loop {
-        if stack.is_link_up() {
-            break;
-        }
-        Timer::after(Duration::from_millis(50)).await;
-    }
-
-    log::info!("Waiting to get IP address...");
-    loop {
-        if let Some(config) = stack.config_v4() {
-            log::info!("Got IP: {}", config.address);
-            break;
-        }
-        Timer::after(Duration::from_millis(50)).await;
-    }
-
     system.event_channel.publish_immediate(Event::ConnectedWifi);
     watchdog_ticket.feed().await;
 
+    let mut rx_buffer = [0; SOCKET_BUFFER_SIZE];
+    let mut tx_buffer = [0; SOCKET_BUFFER_SIZE];
+
     loop {
+        if !stack.is_link_up() {
+            log::warn!("Link down, awaiting reconnect...");
+            return;
+        }
+
         let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
 
         socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
         let endpoint = IpEndpoint::new(Ipv4Address::new(192, 168, 1, 2).into(), 1883);
 
-        log::info!("Connecting...");
+        log::info!("Connecting to socket...");
         let r = socket.connect(endpoint).await;
         if let Err(e) = r {
             log::info!("connect error: {:?}", e);
             continue;
         }
-        log::info!("Connected!");
+        log::info!("Socket connected!");
 
-        let mut config: ClientConfig<'_, 20, CountingRng> = ClientConfig::new(
+        let mut config: ClientConfig<'_, MAX_PROPERTIES, CountingRng> = ClientConfig::new(
             rust_mqtt::client::client_config::MqttVersion::MQTTv5,
             CountingRng(seed % (u16::MAX as u64)),
         );
 
         config.add_max_subscribe_qos(QualityOfService::QoS1);
         config.add_client_id("slakkotron");
-        config.max_packet_size = 256;
+        config.max_packet_size = MAX_PACKET_SIZE as u32;
 
-        let mut recv_buffer = [0; 256];
-        let mut write_buffer = [0; 256];
+        let mut recv_buffer = [0; MAX_PACKET_SIZE];
+        let mut write_buffer = [0; MAX_PACKET_SIZE];
 
         let mut client = MqttClient::new(
             socket,
             &mut write_buffer,
-            512,
+            MAX_PACKET_SIZE,
             &mut recv_buffer,
-            512,
+            MAX_PACKET_SIZE,
             config,
         );
 
         log::info!("Connecting to broker...");
         client.connect_to_broker().await.unwrap();
-        log::info!("Connected");
+        log::info!("Broker connected");
 
         system.event_channel.publish_immediate(Event::ConnectedMQTT);
 
@@ -264,28 +287,39 @@ async fn net_task(
             .await
             .unwrap();
 
+        mqtt_connected(system, watchdog_ticket, &mut client).await;
+
+        log::warn!("MQTT connection broken down, reconnecting...");
+    }
+}
+
+#[embassy_executor::task]
+async fn net_task(
+    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
+    system: &'static Net,
+    seed: u64,
+    watchdog_ticket: WatchdogTicket,
+) {
+    loop {
         loop {
-            watchdog_ticket.feed().await;
-
-            let outcoming_fut = system.outgoing_channel.receive();
-            let incoming_fut = client.receive_message();
-
-            match embassy_futures::select::select(outcoming_fut, incoming_fut).await {
-                embassy_futures::select::Either::First(message) => {
-                    if let Err(e) =
-                        send_message_qos1(&mut client, &message.topic, &message.content, false)
-                            .await
-                    {
-                        log::error!("{:?}", e);
-                    }
-                }
-                embassy_futures::select::Either::Second(message) => match message {
-                    Ok((topic, buf)) => system.process_message(topic, buf).await,
-                    Err(ReasonCode::ImplementationSpecificError) => {}
-                    Err(e) => log::error!("{:?}", e),
-                },
+            if stack.is_link_up() {
+                break;
             }
+            Timer::after(Duration::from_millis(50)).await;
         }
+
+        log::info!("Waiting to get IP address...");
+        loop {
+            if let Some(config) = stack.config_v4() {
+                log::info!("Got IP: {}", config.address);
+                break;
+            }
+            Timer::after(Duration::from_millis(50)).await;
+        }
+
+        watchdog_ticket.feed().await;
+
+        link_up(stack, system, seed, &watchdog_ticket).await;
     }
 }
 

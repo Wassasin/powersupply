@@ -19,7 +19,7 @@ pub struct WatchdogTicket {
     index: usize,
 }
 
-const WATCHDOG_DURATION_SECS: u64 = 10;
+const WATCHDOG_DURATION_SECS: u64 = 30;
 const WATCHDOG_WIGGLE_SECS: u64 = 1;
 
 /// If you feed the watchdog every deadline, you should be OK.
